@@ -1,0 +1,17 @@
+{
+  "name": "one-hook",
+  "version": "1.0.0",
+  "description": "One Hook - Browser Arcade Fishing Game",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5"
+  }
+}

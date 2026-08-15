@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>One Hook - Arcade Fishing Game</title>
+  <meta name="description" content="A visually stunning browser arcade fishing game. Watch the fish, tap at the right moment, drop the hook, and beat your high score!">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Game Canvas Engine Container -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- UI Overlay Wrapper -->
+  <div id="ui-overlay">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- In-Game HUD Header -->
+    <header id="hud-screen" class="hidden">
+      <div class="hud-bar">
+        <div class="hud-stat">
+          <span class="hud-label">BEST</span>
+          <span id="hud-best" class="hud-value">0</span>
+        </div>
+
+        <div class="hud-stat hud-score-box">
+          <span class="hud-label">SCORE</span>
+          <span id="hud-score" class="hud-value highlight">0</span>
+        </div>
+
+        <div class="hud-stat">
+          <span class="hud-label">ATTEMPTS PENDING</span>
+          <div class="hud-attempts-box">
+            <span id="hud-hearts" class="hud-hearts">❤️ ❤️ ❤️</span>
+            <span id="hud-attempts-count" class="hud-attempts-num">(3/3)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-subbar">
+        <span id="hud-level" class="hud-badge">LEVEL 1: Small Fish</span>
+        <button id="audio-toggle-btn" class="hud-btn" title="Toggle Sound">🔊</button>
+      </div>
+
+      <!-- Challenge HUD Notice Banner -->
+      <div id="challenge-hud-notice" class="challenge-notice hidden"></div>
+    </header>
+
+    <!-- Main Home Screen -->
+    <main id="home-screen" class="home-container">
+      <div class="home-card glass-panel">
+        <div class="hook-icon-glow">🪝</div>
+        <h1 class="game-title">ONE HOOK</h1>
+        <p class="game-subtitle">Tap at the right moment. Catch the fish.</p>
+
+        <div class="best-score-badge">
+          <span class="lbl">BEST SCORE</span>
+          <span id="home-best-score" class="val">0</span>
+        </div>
+
+        <button id="play-btn" class="btn btn-play">PLAY</button>
+
+        <div class="home-menu-grid">
+          <button id="open-leaderboard-btn" class="btn btn-menu">🏆 Leaderboard</button>
+          <button id="open-friends-btn" class="btn btn-menu">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
+          <button id="open-profile-btn" class="btn btn-menu">👤 Account</button>
+        </div>
+
+        <div id="user-profile-badge" class="user-badge-footer">
+          👤 <span>Sign In</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Auth / Account Modal -->
+    <div id="auth-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel">
+        <button id="close-auth-btn" class="modal-close">&times;</button>
+        
+        <!-- Registration Form -->
+        <div id="auth-step-register">
+          <h2>🎣 Join One Hook</h2>
+          <p class="modal-desc">Create your angler profile to save scores, add friends, and compete!</p>
+
+          <div class="form-group">
+            <label for="auth-username">USERNAME</label>
+            <input type="text" id="auth-username" placeholder="e.g. Sobish" maxlength="20" autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label for="auth-email">EMAIL ADDRESS</label>
+            <input type="email" id="auth-email" placeholder="e.g. angler@example.com" autocomplete="off">
+          </div>
+
+          <button id="auth-submit-btn" class="btn btn-primary btn-full">CONTINUE</button>
+        </div>
+
+        <!-- Verification Form -->
+        <div id="auth-step-otp" class="hidden">
+          <h2>✉️ Verify Email</h2>
+          <p class="modal-desc">Enter the 6-digit verification code sent to <strong id="otp-sent-email">email@example.com</strong></p>
+
+          <div class="form-group">
+            <label for="otp-code-input">VERIFICATION CODE</label>
+            <input type="text" id="otp-code-input" placeholder="_ _ _ _ _ _" maxlength="6" class="otp-input" autocomplete="off">
+          </div>
+
+          <button id="otp-verify-btn" class="btn btn-success btn-full">VERIFY EMAIL</button>
+        </div>
+
+        <!-- Signed-in Profile View -->
+        <div id="auth-step-profile" class="hidden">
+          <h2>👤 Angler Profile</h2>
+          <div class="target-score-card" style="margin-top: 14px; margin-bottom: 14px;">
+            <span class="lbl">LOGGED IN AS</span>
+            <span id="profile-username-display" class="val" style="font-size: 1.5rem; color: #fff;">Angler</span>
+            <span id="profile-email-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">email@example.com</span>
+          </div>
+          <div class="score-box" style="margin-bottom: 20px; align-items: center;">
+            <span class="lbl">PERSONAL BEST</span>
+            <span id="profile-best-score-display" class="val highlight">0</span>
+          </div>
+          <button id="auth-logout-btn" class="btn btn-danger btn-full">LOG OUT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel modal-lg">
+        <button id="close-lb-btn" class="modal-close">&times;</button>
+        <h2>🏆 LEADERBOARD</h2>
+
+        <div class="tab-header">
+          <button id="lb-tab-global" class="tab-btn active">🌐 Global Top Scores</button>
+          <button id="lb-tab-friends" class="tab-btn">👥 Friends Ranking</button>
+        </div>
+
+        <div id="lb-list-container" class="tab-content">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Friends Modal -->
+    <div id="friends-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel modal-lg">
+        <button id="close-friends-btn" class="modal-close">&times;</button>
+        <h2>👥 FRIENDS</h2>
+
+        <div class="tab-header">
+          <button id="fr-tab-list" class="tab-btn active">My Friends</button>
+          <button id="fr-tab-add" class="tab-btn">+ Add Friend</button>
+          <button id="fr-tab-requests" class="tab-btn">Requests <span id="requests-tab-badge" class="nav-badge hidden">0</span></button>
+        </div>
+
+        <!-- Friends List Section -->
+        <div id="fr-section-list" class="tab-content">
+          <div id="fr-list-container"></div>
+        </div>
+
+        <!-- Add Friend Section -->
+        <div id="fr-section-add" class="tab-content hidden">
+          <div class="search-bar">
+            <input type="text" id="friend-search-input" placeholder="Search username..." autocomplete="off">
+            <button id="friend-search-btn" class="btn btn-primary">SEARCH</button>
+          </div>
+          <div id="friend-search-results"></div>
+        </div>
+
+        <!-- Pending Requests Section -->
+        <div id="fr-section-requests" class="tab-content hidden">
+          <div id="fr-requests-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Modal -->
+    <div id="challenge-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel text-center">
+        <button id="close-challenge-btn" class="modal-close">&times;</button>
+        <div class="challenge-icon">⚔️</div>
+        <h2>BEAT <span id="ch-opponent-name">FRIEND</span></h2>
+        
+        <div class="target-score-card">
+          <span class="lbl">SCORE TO BEAT</span>
+          <span id="ch-score-target" class="val">2,842</span>
+        </div>
+
+        <p class="challenge-desc">Catch as many fish as possible without missing!</p>
+
+        <button id="start-challenge-btn" class="btn btn-play btn-full">PLAY CHALLENGE</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel text-center modal-gameover">
+        <h2 class="gameover-title">GAME OVER</h2>
+
+        <div id="go-new-best-banner" class="new-best-banner hidden">
+          🔥 NEW BEST SCORE!
+        </div>
+
+        <div id="go-challenge-result-banner" class="challenge-result-banner hidden"></div>
+
+        <div class="score-summary-grid">
+          <div class="score-box">
+            <span class="lbl">FINAL SCORE</span>
+            <span id="go-final-score" class="val highlight">0</span>
+          </div>
+
+          <div class="score-box">
+            <span class="lbl">BEST SCORE</span>
+            <span id="go-best-score" class="val">0</span>
+          </div>
+        </div>
+
+        <div id="go-level-reached" class="level-reached-badge">
+          LEVEL 1: SMALL FISH
+        </div>
+
+        <div class="gameover-actions">
+          <button id="restart-btn" class="btn btn-play btn-full">PLAY AGAIN</button>
+          <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="js/sound.js"></script>
+  <script src="js/fish.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+
+  <script>
+    // Initialize Game Instance
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('game-canvas');
+      window.game = new GameEngine(canvas);
+      window.game.run();
+    });
+  </script>
+</body>
+</html>
