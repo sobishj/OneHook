@@ -3,6 +3,7 @@ class UIManager {
     // DOM Elements
     this.homeScreen = document.getElementById('home-screen');
     this.hudScreen = document.getElementById('hud-screen');
+    this.portalNav = document.getElementById('portal-nav');
 
     // HUD Elements
     this.hudBest = document.getElementById('hud-best');
@@ -10,7 +11,8 @@ class UIManager {
     this.hudHearts = document.getElementById('hud-hearts');
     this.hudLevel = document.getElementById('hud-level');
     this.audioBtn = document.getElementById('audio-toggle-btn');
-    this.homeBest = document.getElementById('home-best-score');
+    this.audioNavBtn = document.getElementById('audio-toggle-btn-nav');
+    this.exitToHubBtn = document.getElementById('exit-to-hub-btn');
 
     // User Profile Display
     this.userBadge = document.getElementById('user-profile-badge');
@@ -32,38 +34,47 @@ class UIManager {
     this.selectedChallengeOpponent = null;
 
     this.initListeners();
+    this.renderFeaturedGames();
+    this.initRouting();
   }
 
   initListeners() {
-    // Home Menu Buttons
-    document.getElementById('play-btn').addEventListener('click', () => {
-      this.homeScreen.classList.add('hidden');
-      if (window.game) {
-        window.game.startNewGame();
-      }
-    });
+    // Logo Brand Home Navigation
+    const brandLogo = document.getElementById('nav-brand-logo');
+    if (brandLogo) {
+      brandLogo.addEventListener('click', () => this.showHomeScreen());
+    }
 
-    document.getElementById('open-leaderboard-btn').addEventListener('click', () => {
-      this.openLeaderboardModal('global');
-    });
+    // Exit HUD to Hub
+    if (this.exitToHubBtn) {
+      this.exitToHubBtn.addEventListener('click', () => this.showHomeScreen());
+    }
 
-    document.getElementById('open-friends-btn').addEventListener('click', () => {
-      this.openFriendsModal('list');
-    });
+    // Header Navigation Buttons
+    const openLbBtn = document.getElementById('open-leaderboard-btn');
+    if (openLbBtn) openLbBtn.addEventListener('click', () => this.openLeaderboardModal('global'));
 
-    document.getElementById('open-profile-btn').addEventListener('click', () => {
-      this.openAuthModal();
-    });
+    const openFrBtn = document.getElementById('open-friends-btn');
+    if (openFrBtn) openFrBtn.addEventListener('click', () => this.openFriendsModal('list'));
 
-    this.userBadge.addEventListener('click', () => {
-      this.openAuthModal();
-    });
+    const openProfileBtn = document.getElementById('open-profile-btn');
+    if (openProfileBtn) openProfileBtn.addEventListener('click', () => this.openAuthModal());
 
-    this.audioBtn.addEventListener('click', () => {
+    if (this.userBadge) {
+      this.userBadge.addEventListener('click', () => this.openAuthModal());
+    }
+
+    // Audio Toggles
+    const handleAudioToggle = () => {
       const isMuted = window.soundManager.toggleMute();
-      this.audioBtn.innerHTML = isMuted ? '🔇' : '🔊';
+      const icon = isMuted ? '🔇' : '🔊';
+      if (this.audioBtn) this.audioBtn.innerHTML = icon;
+      if (this.audioNavBtn) this.audioNavBtn.innerHTML = icon;
       this.showToast(isMuted ? 'Audio Muted' : 'Audio Unmuted', 'info');
-    });
+    };
+
+    if (this.audioBtn) this.audioBtn.addEventListener('click', handleAudioToggle);
+    if (this.audioNavBtn) this.audioNavBtn.addEventListener('click', handleAudioToggle);
 
     // Auth Modal Handlers
     document.getElementById('close-auth-btn').addEventListener('click', () => this.closeModal(this.authModal));
@@ -86,10 +97,7 @@ class UIManager {
     // Challenge Modal
     document.getElementById('start-challenge-btn').addEventListener('click', () => {
       this.closeModal(this.challengeModal);
-      this.homeScreen.classList.add('hidden');
-      if (window.game && this.selectedChallengeOpponent) {
-        window.game.startNewGame(this.selectedChallengeOpponent);
-      }
+      this.launchGame('one-hook', this.selectedChallengeOpponent);
     });
     document.getElementById('close-challenge-btn').addEventListener('click', () => this.closeModal(this.challengeModal));
 
@@ -110,6 +118,71 @@ class UIManager {
     this.refreshUserBadge();
   }
 
+  // =========================================================================
+  // GAME HUB - REUSABLE GAME CARD COMPONENT RENDERER
+  // =========================================================================
+  renderFeaturedGames() {
+    const grid = document.getElementById('games-grid');
+    if (!grid || !window.GAMES_DATA) return;
+
+    grid.innerHTML = window.GAMES_DATA.map(game => this.createGameCardHtml(game)).join('');
+  }
+
+  createGameCardHtml(game) {
+    const isNew = game.badge === 'NEW';
+    const badgeClass = isNew ? 'badge-new' : 'badge-soon';
+    
+    const playBtn = game.isPlayable
+      ? `<button class="btn btn-yellow-play" onclick="uiManager.launchGame('${game.id}')">PLAY</button>`
+      : `<button class="btn btn-yellow-play btn-disabled" disabled>SOON</button>`;
+
+    return `
+      <article class="game-card" data-game-id="${game.id}">
+        <div class="game-card-art-wrap">
+          <img src="${game.image}" alt="${game.title}" class="game-card-art" loading="lazy">
+          <span class="game-card-badge ${badgeClass}">${game.badge}</span>
+        </div>
+        <div class="game-card-body">
+          <h3 class="game-card-title">${game.title}</h3>
+          <p class="game-card-desc">${game.description}</p>
+          <div class="game-card-actions">
+            ${playBtn}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  launchGame(gameId, challengeContext = null) {
+    if (gameId === 'one-hook') {
+      window.location.hash = '/games/one-hook';
+      this.homeScreen.classList.add('hidden');
+      if (this.portalNav) this.portalNav.classList.add('hidden');
+      this.showInGameHUD();
+      if (window.game) {
+        window.game.startNewGame(challengeContext);
+      }
+    } else {
+      this.showToast('🎮 Game coming soon to One Hook Arcade!', 'info');
+    }
+  }
+
+  initRouting() {
+    const checkRoute = () => {
+      const path = window.location.hash || window.location.pathname;
+      if (path.includes('/games/one-hook')) {
+        this.launchGame('one-hook');
+      } else {
+        this.showHomeScreen();
+      }
+    };
+
+    window.addEventListener('hashchange', checkRoute);
+    if (window.location.hash.includes('/games/one-hook') || window.location.pathname.includes('/games/one-hook')) {
+      checkRoute();
+    }
+  }
+
   showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -125,15 +198,15 @@ class UIManager {
   refreshUserBadge() {
     const user = window.apiClient.user;
     if (user) {
-      this.userBadge.innerHTML = `👤 <strong>${user.username}</strong> (Best: ${user.best_score || 0})`;
+      if (this.userBadge) {
+        this.userBadge.innerHTML = `👤 <strong>${user.username}</strong> (Best: ${user.best_score || 0})`;
+      }
       if (window.game) {
         window.game.bestScore = user.best_score || 0;
       }
-      this.homeBest.textContent = (user.best_score || 0).toLocaleString();
       this.checkPendingNotifications();
-    } else {
+    } else if (this.userBadge) {
       this.userBadge.innerHTML = `👤 <span>Sign In</span>`;
-      this.homeBest.textContent = '0';
     }
   }
 
@@ -156,6 +229,8 @@ class UIManager {
   }
 
   showHomeScreen() {
+    window.location.hash = '/';
+    if (this.portalNav) this.portalNav.classList.remove('hidden');
     this.homeScreen.classList.remove('hidden');
     this.hudScreen.classList.add('hidden');
     this.refreshUserBadge();

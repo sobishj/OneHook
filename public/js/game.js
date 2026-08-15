@@ -118,10 +118,6 @@ class GameEngine {
 
     // Single gameplay action: Click or Touch
     const handleAction = (e) => {
-      // Prevent action if clicking UI elements / modals
-      if (e.target.closest('#ui-overlay') && !e.target.closest('#game-touch-area')) {
-        return;
-      }
       if (this.state === 'PLAYING') {
         this.triggerHook();
       }
@@ -129,15 +125,77 @@ class GameEngine {
 
     window.addEventListener('pointerdown', (e) => {
       // Ignore if clicking on interactive UI buttons
-      if (e.target.tagName === 'BUTTON' || e.target.closest('.modal-card') || e.target.closest('.hud-btn')) {
+      if (e.target.tagName === 'BUTTON' || e.target.closest('.modal-card') || e.target.closest('.hud-btn') || e.target.closest('.btn')) {
         return;
       }
       window.soundManager.init();
       handleAction(e);
     });
+
+    // Spacebar control for dropping hook (bulletproof handler on document & window)
+    const handleSpaceKey = (e) => {
+      const isSpace =
+        e.code === 'Space' ||
+        e.key === ' ' ||
+        e.key === 'Spacebar' ||
+        e.keyCode === 32 ||
+        e.which === 32 ||
+        (e.key && e.key.toLowerCase().includes('space'));
+
+      if (!isSpace) return;
+
+      // Ignore if user is typing inside an input or textarea
+      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      // Ignore if an active modal dialog is open
+      const openModal = document.querySelector('.modal-backdrop:not(.hidden)');
+      if (openModal) return;
+
+      // Check if HUD / game view is active
+      const hudScreen = document.getElementById('hud-screen');
+      const isGameViewActive = hudScreen && !hudScreen.classList.contains('hidden');
+
+      if (this.state === 'PLAYING' || isGameViewActive) {
+        e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+
+        if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+
+        if (this.state !== 'PLAYING') {
+          this.state = 'PLAYING';
+        }
+
+        window.soundManager.init();
+        this.triggerHook();
+      }
+    };
+
+    document.addEventListener('keydown', handleSpaceKey, true);
+    window.addEventListener('keydown', handleSpaceKey, true);
+
+    window.addEventListener('keyup', (e) => {
+      const isSpace =
+        e.code === 'Space' ||
+        e.key === ' ' ||
+        e.key === 'Spacebar' ||
+        e.keyCode === 32 ||
+        e.which === 32;
+      const hudScreen = document.getElementById('hud-screen');
+      const isGameViewActive = hudScreen && !hudScreen.classList.contains('hidden');
+      if (isSpace && (this.state === 'PLAYING' || isGameViewActive)) {
+        e.preventDefault();
+      }
+    }, true);
   }
 
   startNewGame(challengeContext = null) {
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
     this.state = 'PLAYING';
     this.score = 0;
     this.lives = 3;

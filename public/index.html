@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>One Hook - Arcade Fishing Game</title>
-  <meta name="description" content="A visually stunning browser arcade fishing game. Watch the fish, tap at the right moment, drop the hook, and beat your high score!">
+  <title>One Hook Arcade - Game Hub</title>
+  <meta name="description" content="Discover and play arcade browser games. Drop the hook, catch the fish, and beat high scores in One Hook!">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +21,21 @@
 
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
+
+    <!-- Main Portal Navigation Header -->
+    <header id="portal-nav" class="portal-navbar">
+      <div class="portal-nav-brand" id="nav-brand-logo">
+        <span class="portal-logo-icon">🪝</span>
+        <span class="portal-logo-title">ONE HOOK <small>ARCADE</small></span>
+      </div>
+
+      <div class="portal-nav-actions">
+        <button id="open-leaderboard-btn" class="btn btn-nav-item">🏆 Leaderboard</button>
+        <button id="open-friends-btn" class="btn btn-nav-item">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
+        <button id="open-profile-btn" class="btn btn-nav-item">👤 Account</button>
+        <button id="audio-toggle-btn-nav" class="btn btn-nav-icon" title="Toggle Sound">🔊</button>
+      </div>
+    </header>
 
     <!-- In-Game HUD Header -->
     <header id="hud-screen" class="hidden">
@@ -45,6 +60,7 @@
       </div>
 
       <div class="hud-subbar">
+        <button id="exit-to-hub-btn" class="hud-btn-text">🏠 HUB</button>
         <span id="hud-level" class="hud-badge">LEVEL 1: Small Fish</span>
         <button id="audio-toggle-btn" class="hud-btn" title="Toggle Sound">🔊</button>
       </div>
@@ -53,29 +69,22 @@
       <div id="challenge-hud-notice" class="challenge-notice hidden"></div>
     </header>
 
-    <!-- Main Home Screen -->
-    <main id="home-screen" class="home-container">
-      <div class="home-card glass-panel">
-        <div class="hook-icon-glow">🪝</div>
-        <h1 class="game-title">ONE HOOK</h1>
-        <p class="game-subtitle">Tap at the right moment. Catch the fish.</p>
-
-        <div class="best-score-badge">
-          <span class="lbl">BEST SCORE</span>
-          <span id="home-best-score" class="val">0</span>
+    <!-- Main Home Page: Arcade Game Hub -->
+    <main id="home-screen" class="portal-container">
+      <!-- Featured Games Section Header -->
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="yellow-accent-bar"></div>
+          <h2 class="section-title">FEATURED GAMES</h2>
         </div>
-
-        <button id="play-btn" class="btn btn-play">PLAY</button>
-
-        <div class="home-menu-grid">
-          <button id="open-leaderboard-btn" class="btn btn-menu">🏆 Leaderboard</button>
-          <button id="open-friends-btn" class="btn btn-menu">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
-          <button id="open-profile-btn" class="btn btn-menu">👤 Account</button>
-        </div>
-
-        <div id="user-profile-badge" class="user-badge-footer">
+        <div id="user-profile-badge" class="user-badge-header">
           👤 <span>Sign In</span>
         </div>
+      </div>
+
+      <!-- Responsive Game Cards Grid -->
+      <div id="games-grid" class="games-grid">
+        <!-- Rendered dynamically from GAMES_DATA via GameCard component renderer -->
       </div>
     </main>
 
@@ -86,7 +95,7 @@
         
         <!-- Registration Form -->
         <div id="auth-step-register">
-          <h2>🎣 Join One Hook</h2>
+          <h2>🎣 Join One Hook Arcade</h2>
           <p class="modal-desc">Create your angler profile to save scores, add friends, and compete!</p>
 
           <div class="form-group">
@@ -196,7 +205,7 @@
 
         <p class="challenge-desc">Catch as many fish as possible without missing!</p>
 
-        <button id="start-challenge-btn" class="btn btn-play btn-full">PLAY CHALLENGE</button>
+        <button id="start-challenge-btn" class="btn btn-yellow-play btn-full">PLAY CHALLENGE</button>
       </div>
     </div>
 
@@ -228,8 +237,8 @@
         </div>
 
         <div class="gameover-actions">
-          <button id="restart-btn" class="btn btn-play btn-full">PLAY AGAIN</button>
-          <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">MAIN MENU</button>
+          <button id="restart-btn" class="btn btn-yellow-play btn-full">PLAY AGAIN</button>
+          <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GAME HUB</button>
         </div>
       </div>
     </div>
@@ -241,6 +250,7 @@
   <script src="js/fish.js"></script>
   <script src="js/game.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/games-data.js"></script>
   <script src="js/ui.js"></script>
 
   <script>
