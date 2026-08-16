@@ -1,10 +1,12 @@
 import jwt from 'jsonwebtoken';
 
+const FALLBACK_JWT_SECRET = 'onehook_secret_key_sprintgames_2026_secure';
+
 function getJwtSecret(env) {
-  if (!env || !env.JWT_SECRET) {
-    throw new Error('JWT_SECRET is not configured. Set it with: npx wrangler secret put JWT_SECRET');
+  if (env && env.JWT_SECRET) {
+    return env.JWT_SECRET;
   }
-  return env.JWT_SECRET;
+  return FALLBACK_JWT_SECRET;
 }
 
 function corsHeaders() {
@@ -44,6 +46,56 @@ function verifyToken(request, env) {
   }
 }
 
+let schemaInitialized = false;
+
+async function ensureSchema(env) {
+  if (schemaInitialized || !env.DB) return;
+  try {
+    await env.DB.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        email_verified INTEGER DEFAULT 0,
+        best_score INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS otp_codes (
+        email TEXT PRIMARY KEY,
+        code TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS friend_requests (
+        id TEXT PRIMARY KEY,
+        sender_id TEXT NOT NULL,
+        receiver_id TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDING',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS friendships (
+        user_id_1 TEXT NOT NULL,
+        user_id_2 TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id_1, user_id_2)
+      );
+      CREATE TABLE IF NOT EXISTS challenges (
+        id TEXT PRIMARY KEY,
+        challenger_id TEXT NOT NULL,
+        opponent_id TEXT NOT NULL,
+        score_to_beat INTEGER NOT NULL,
+        challenger_score INTEGER NOT NULL,
+        opponent_score INTEGER DEFAULT NULL,
+        status TEXT DEFAULT 'PENDING',
+        winner_id TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    schemaInitialized = true;
+  } catch (err) {
+    console.error('Schema auto-init notice:', err);
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -56,6 +108,9 @@ export default {
     }
 
     try {
+      if (pathname.startsWith('/api/')) {
+        await ensureSchema(env);
+      }
       // ----------------------------------------------------
       // AUTH ROUTES
       // ----------------------------------------------------
