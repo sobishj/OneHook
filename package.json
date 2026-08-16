@@ -3,15 +3,21 @@
   "version": "1.0.0",
   "description": "One Hook - Browser Arcade Fishing Game",
   "main": "server.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "wrangler dev",
+    "dev:node": "node server.js",
+    "deploy": "wrangler deploy",
+    "d1:migrate": "wrangler d1 execute onehook-db --local --file=./migrations/0001_initial.sql",
+    "d1:migrate:prod": "wrangler d1 execute onehook-db --remote --file=./migrations/0001_initial.sql"
   },
   "dependencies": {
     "express": "^4.19.2",
     "sqlite3": "^5.1.7",
     "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
   }
 }
