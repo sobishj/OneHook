@@ -6,6 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "onehook-db"
+# IMPORTANT: Replace this with your real database_id after running:
+#   npx wrangler d1 create onehook-db
+# The returned database_id must be pasted here before deploying.
 database_id = "00000000-0000-0000-0000-000000000000"
 
 [assets]
