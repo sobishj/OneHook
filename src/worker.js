@@ -96,6 +96,76 @@ async function ensureSchema(env) {
   }
 }
 
+async function sendVerificationEmail({ email, username, code, env }) {
+  const subject = `Your OneHook Verification Code: ${code}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 12px; border: 1px solid #334155;">
+      <h2 style="color: #38bdf8; text-align: center; margin-top: 0; font-size: 24px;">🎣 OneHook Arcade</h2>
+      <p style="font-size: 16px; color: #e2e8f0;">Ahoy <strong>${username || 'Angler'}</strong>,</p>
+      <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5;">Use the following 6-digit verification code to complete your registration on OneHook:</p>
+      <div style="text-align: center; margin: 28px 0;">
+        <span style="display: inline-block; font-size: 34px; font-weight: 800; letter-spacing: 8px; padding: 14px 28px; background: #1e293b; color: #fbbf24; border-radius: 10px; border: 2px dashed #f59e0b; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">${code}</span>
+      </div>
+      <p style="color: #94a3b8; font-size: 13px; line-height: 1.4; border-top: 1px solid #334155; padding-top: 16px;">This code will expire in <strong>10 minutes</strong>. If you did not request this verification code, you can safely ignore this message.</p>
+    </div>
+  `;
+  const text = `Ahoy ${username || 'Angler'},\n\nYour OneHook verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Fishing!`;
+
+  // 1. Resend API Integration (https://resend.com)
+  if (env && env.RESEND_API_KEY) {
+    try {
+      const fromEmail = env.EMAIL_FROM || 'OneHook Arcade <onboarding@resend.dev>';
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [email],
+          subject,
+          html,
+          text
+        })
+      });
+      if (res.ok) {
+        console.log(`[EMAIL] Verification code successfully sent to ${email} via Resend`);
+        return;
+      }
+    } catch (err) {
+      console.error('[EMAIL ERROR] Resend dispatch error:', err);
+    }
+  }
+
+  // 2. MailChannels Cloudflare Worker Direct Dispatch
+  try {
+    const fromEmail = (env && env.EMAIL_FROM) || 'verify@sprintgames.online';
+    const mcRes = await fetch('https://api.mailchannels.net/tx/v1/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email, name: username || 'Angler' }] }],
+        from: { email: fromEmail, name: 'OneHook Arcade' },
+        subject,
+        content: [
+          { type: 'text/plain', value: text },
+          { type: 'text/html', value: html }
+        ]
+      })
+    });
+    if (mcRes.ok) {
+      console.log(`[EMAIL] Verification code successfully sent to ${email} via MailChannels`);
+      return;
+    }
+  } catch (err) {
+    console.error('[EMAIL ERROR] MailChannels dispatch error:', err);
+  }
+
+  // 3. Fallback: Log to Cloudflare Worker logs for inspection / development
+  console.log(`[EMAIL VERIFICATION CODE] To: ${email} | Angler: ${username} | Code: ${code}`);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -137,10 +207,13 @@ export default {
           const otp = generateOTP();
           const expiresAt = Date.now() + 10 * 60 * 1000;
           await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
+
+          // Send verification email
+          ctx.waitUntil(sendVerificationEmail({ email: cleanEmail, username: existingUser.username, code: otp, env }));
+
           return jsonResponse({
-            message: 'Account already exists. Verification code sent.',
+            message: 'Verification code sent to your email. Please check your inbox!',
             email: cleanEmail,
-            otp: otp,
             isExisting: true
           });
         }
@@ -159,10 +232,12 @@ export default {
         const expiresAt = Date.now() + 10 * 60 * 1000;
         await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
 
+        // Send verification email
+        ctx.waitUntil(sendVerificationEmail({ email: cleanEmail, username: cleanUsername, code: otp, env }));
+
         return jsonResponse({
-          message: 'Verification code sent to email',
+          message: 'Verification code sent to your email. Please check your inbox!',
           email: cleanEmail,
-          otp: otp,
           isExisting: false
         });
       }

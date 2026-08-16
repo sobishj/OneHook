@@ -319,12 +319,12 @@ class UIManager {
       const res = await window.apiClient.register(username, email);
       this.pendingEmail = res.email;
 
-      this.showToast(res.message, 'success');
+      this.showToast(res.message || 'Verification code sent to your email!', 'success');
 
-      // Helper toast with the mock OTP for instant testing!
-      if (res.otp) {
-        this.showToast(`🔑 Verification Code: <strong>${res.otp}</strong>`, 'info');
-        document.getElementById('otp-code-input').value = res.otp;
+      const otpInput = document.getElementById('otp-code-input');
+      if (otpInput) {
+        otpInput.value = '';
+        otpInput.focus();
       }
 
       document.getElementById('auth-step-register').classList.add('hidden');
