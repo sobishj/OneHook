@@ -82,6 +82,19 @@ class UIManager {
     document.getElementById('otp-verify-btn').addEventListener('click', () => this.handleOtpVerify());
     document.getElementById('auth-logout-btn').addEventListener('click', () => this.handleLogout());
 
+    const backBtn = document.getElementById('otp-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        document.getElementById('auth-step-register').classList.remove('hidden');
+        document.getElementById('auth-step-otp').classList.add('hidden');
+      });
+    }
+
+    const resendBtn = document.getElementById('otp-resend-btn');
+    if (resendBtn) {
+      resendBtn.addEventListener('click', () => this.handleResendOtp());
+    }
+
     // Leaderboard Tabs
     document.getElementById('lb-tab-global').addEventListener('click', () => this.renderGlobalLeaderboard());
     document.getElementById('lb-tab-friends').addEventListener('click', () => this.renderFriendsLeaderboard());
@@ -347,6 +360,28 @@ class UIManager {
       this.showToast(`Welcome aboard, ${res.user.username}!`, 'success');
       this.closeModal(this.authModal);
       this.refreshUserBadge();
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  }
+
+  async handleResendOtp() {
+    if (!this.pendingEmail) {
+      this.showToast('Please enter your email again', 'error');
+      document.getElementById('auth-step-register').classList.remove('hidden');
+      document.getElementById('auth-step-otp').classList.add('hidden');
+      return;
+    }
+
+    try {
+      const username = document.getElementById('auth-username').value.trim() || 'Angler';
+      const res = await window.apiClient.register(username, this.pendingEmail);
+      this.showToast('A new verification code has been sent to your email!', 'success');
+      const otpInput = document.getElementById('otp-code-input');
+      if (otpInput) {
+        otpInput.value = '';
+        otpInput.focus();
+      }
     } catch (err) {
       this.showToast(err.message, 'error');
     }
