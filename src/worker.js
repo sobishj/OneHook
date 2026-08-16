@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 
-const DEFAULT_JWT_SECRET = 'onehook_secret_key_2026_super_secure';
-
 function getJwtSecret(env) {
-  return env && env.JWT_SECRET ? env.JWT_SECRET : DEFAULT_JWT_SECRET;
+  if (!env || !env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured. Set it with: npx wrangler secret put JWT_SECRET');
+  }
+  return env.JWT_SECRET;
 }
 
 function corsHeaders() {
