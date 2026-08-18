@@ -54,9 +54,9 @@ class Fish {
     this.isScared = true;
     this.scareTimer = 60 + Math.random() * 60; // Panic for 1-2 seconds
 
-    // 100% chance to turn away if swimming towards the hook
+    // Very few fishes (~20% chance) turn away if swimming towards the hook
     const movingTowardsScare = (this.direction === 1 && scareX > this.x) || (this.direction === -1 && scareX < this.x);
-    if (movingTowardsScare) {
+    if (movingTowardsScare && Math.random() < 0.20) {
       this.isTurning = true;
       this.turnProgress = 0;
       this.targetDirection = -this.direction;
