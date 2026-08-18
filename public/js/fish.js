@@ -54,17 +54,16 @@ class Fish {
     this.isScared = true;
     this.scareTimer = 60 + Math.random() * 60; // Panic for 1-2 seconds
 
-    // Very few fishes (~20% chance) turn away if swimming towards the hook
-    const movingTowardsScare = (this.direction === 1 && scareX > this.x) || (this.direction === -1 && scareX < this.x);
-    if (movingTowardsScare && Math.random() < 0.20) {
+    if (Math.random() < 0.25) {
+      // 25% chance to go back
       this.isTurning = true;
       this.turnProgress = 0;
       this.targetDirection = -this.direction;
+    } else {
+      // Remaining 75% go downward or upward randomly
+      const depthDelta = (Math.random() > 0.5 ? 80 : -80);
+      this.targetY = Math.min(canvasHeight * 0.80, Math.max(canvasHeight * 0.20, this.y + depthDelta));
     }
-    
-    // Dive or surface randomly in panic
-    const depthDelta = (Math.random() > 0.5 ? 80 : -80);
-    this.targetY = Math.min(canvasHeight * 0.80, Math.max(canvasHeight * 0.20, this.y + depthDelta));
   }
 
   update(dt, canvasWidth, canvasHeight, engine) {
