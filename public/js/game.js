@@ -122,11 +122,20 @@ class GameEngine {
     this.corals = [];
     count = Math.floor(this.width / 150);
     for (let i = 0; i < count; i++) {
+      const branches = [];
+      const numBranches = 3 + Math.floor(Math.random() * 4);
+      const height = 25 + Math.random() * 35;
+      for (let b = 0; b < numBranches; b++) {
+        branches.push({
+          angle: -Math.PI / 2 + (Math.random() * 1.2 - 0.6),
+          len: height * (0.5 + Math.random() * 0.5)
+        });
+      }
       this.corals.push({
         x: Math.random() * this.width,
-        height: 25 + Math.random() * 35,
         color: Math.random() > 0.5 ? '#f43f5e' : '#f59e0b', // vibrant red-pink or amber
-        branches: 3 + Math.floor(Math.random() * 4)
+        branches: branches,
+        phase: Math.random() * Math.PI * 2
       });
     }
 
@@ -733,19 +742,20 @@ class GameEngine {
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Draw static vibrant corals
+    // Draw vibrant corals (with gentle sway)
+    const time = Date.now() * 0.002;
     for (const coral of this.corals) {
       this.ctx.strokeStyle = coral.color;
       this.ctx.lineWidth = 4;
       this.ctx.lineCap = 'round';
       const baseY = this.height - 20;
+      const sway = Math.sin(time + coral.phase) * 0.1; // Gentle wave sway
       
       this.ctx.beginPath();
-      for (let b = 0; b < coral.branches; b++) {
+      for (const branch of coral.branches) {
         this.ctx.moveTo(coral.x, baseY);
-        const angle = -Math.PI / 2 + (Math.random() * 1.2 - 0.6);
-        const len = coral.height * (0.5 + Math.random() * 0.5);
-        this.ctx.lineTo(coral.x + Math.cos(angle) * len, baseY + Math.sin(angle) * len);
+        const finalAngle = branch.angle + sway;
+        this.ctx.lineTo(coral.x + Math.cos(finalAngle) * branch.len, baseY + Math.sin(finalAngle) * branch.len);
       }
       this.ctx.stroke();
     }
@@ -782,7 +792,6 @@ class GameEngine {
     }
 
     // Seaweed waving (Vibrant Green)
-    const time = Date.now() * 0.002;
     for (const sw of this.seaweed) {
       const wave = Math.sin(time + sw.phase) * 15;
       this.ctx.strokeStyle = sw.color || '#10b981';
