@@ -1200,3 +1200,180 @@ html, body {
   font-size: 0.9rem;
   color: var(--text-muted);
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (TABLET & MOBILE)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Global Layout */
+  .portal-container {
+    padding: 24px 16px 80px;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+
+  /* Modals */
+  .modal-card {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Global Layout */
+  .portal-container {
+    padding: 16px 12px 80px;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  /* Navigation Header */
+  .portal-navbar {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .portal-nav-brand {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .portal-nav-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .btn-nav-item {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .btn-nav-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  /* Game Cards */
+  .game-card-title {
+    font-size: 1.25rem;
+  }
+  
+  .game-card-body {
+    padding: 16px;
+  }
+
+  .btn-yellow-play {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+  }
+
+  /* HUD Bar */
+  .hud-bar {
+    padding: 6px 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .hud-center-group {
+    order: -1; /* Move score to the top of the HUD on very narrow screens */
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .hud-side-group {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .hud-value {
+    font-size: 1.1rem;
+  }
+
+  .hud-label {
+    font-size: 0.55rem;
+  }
+  
+  .hud-btn-text {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  .hud-hearts {
+    font-size: 0.75rem;
+    letter-spacing: 0;
+  }
+
+  .hud-attempts-num {
+    font-size: 0.75rem;
+  }
+
+  .hud-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
+  /* Modals */
+  .modal-card {
+    padding: 20px 16px;
+  }
+
+  .modal-card h2 {
+    font-size: 1.3rem;
+  }
+
+  .gameover-title {
+    font-size: 1.8rem;
+  }
+
+  .score-box {
+    padding: 10px;
+  }
+
+  .score-box .val {
+    font-size: 1.3rem;
+  }
+
+  .profile-username {
+    font-size: 1.4rem;
+  }
+
+  .profile-best-val {
+    font-size: 1.6rem;
+  }
+
+  .target-score-card .val {
+    font-size: 1.8rem;
+  }
+
+  /* Tabs & Lists */
+  .tab-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+
+  .friend-card {
+    padding: 10px 12px;
+  }
+  
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+}
