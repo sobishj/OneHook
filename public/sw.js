@@ -1,5 +1,5 @@
 // SprintGames PWA Service Worker
-const CACHE_NAME = 'sprintgames-shell-v3';
+const CACHE_NAME = 'sprintgames-shell-v5';
 
 // Static application shell assets
 const STATIC_ASSETS = [

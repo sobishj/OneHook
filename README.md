@@ -1,6 +1,6 @@
-# 🪝 OneHook — Browser Arcade Fishing Game
+# 🪝 Sprint Games — Browser Arcade Fishing Game
 
-OneHook is a browser arcade fishing game running entirely on **Cloudflare's 100% Free-Tier Serverless Infrastructure**: **Cloudflare Workers** (Edge API & static assets) and **Cloudflare D1** (Database).
+Sprint Games is a browser arcade fishing game running entirely on **Cloudflare's 100% Free-Tier Serverless Infrastructure**: **Cloudflare Workers** (Edge API & static assets) and **Cloudflare D1** (Database).
 
 ---
 
@@ -107,7 +107,7 @@ npm run deploy
 
 ## 💰 Cloudflare Free-Tier Usage Considerations
 
-| Resource | Free Tier Limit | OneHook Typical Usage | Monthly Cost |
+| Resource | Free Tier Limit | Sprint Games Typical Usage | Monthly Cost |
 | :--- | :--- | :--- | :--- |
 | **Worker Requests** | 100,000 requests / day | ~500–5,000 / day | **₹0.00** |
 | **D1 Read Rows** | 5,000,000 / day | ~10,000 / day | **₹0.00** |

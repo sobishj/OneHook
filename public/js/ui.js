@@ -299,7 +299,7 @@ class UIManager {
       }
       this.checkPendingNotifications();
     } else if (this.userBadge) {
-      this.userBadge.innerHTML = `👤 <span>Sign In</span>`;
+      this.userBadge.innerHTML = `👤 <span>Sign In/ Sign Up</span>`;
     }
   }
 
