@@ -84,10 +84,15 @@ class ApiClient {
 
   // Scores & Leaderboards
   async submitScore(score, durationSeconds, catches) {
-    return this.request('/api/score/submit', {
+    const res = await this.request('/api/score/submit', {
       method: 'POST',
       body: JSON.stringify({ score, durationSeconds, catches })
     });
+    if (res && typeof res.bestScore === 'number' && this.user) {
+      this.user.best_score = res.bestScore;
+      localStorage.setItem('onehook_user', JSON.stringify(this.user));
+    }
+    return res;
   }
 
   async getGlobalLeaderboard() {

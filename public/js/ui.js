@@ -126,8 +126,20 @@ class UIManager {
       this.showHomeScreen();
     });
 
-    // Auto load session user
+    // Auto load session user and sync latest data from server
     this.refreshUserBadge();
+    this.initSessionSync();
+  }
+
+  async initSessionSync() {
+    if (window.apiClient && window.apiClient.token) {
+      try {
+        const freshUser = await window.apiClient.fetchMe();
+        if (freshUser) {
+          this.refreshUserBadge();
+        }
+      } catch (e) {}
+    }
   }
 
   // =========================================================================
@@ -213,6 +225,10 @@ class UIManager {
       if (this.userBadge) {
         this.userBadge.innerHTML = `👤 <strong>${user.username}</strong> (Best: ${user.best_score || 0})`;
       }
+      const profileBestEl = document.getElementById('profile-best-score-display');
+      if (profileBestEl) {
+        profileBestEl.textContent = (user.best_score || 0).toLocaleString();
+      }
       if (window.game) {
         window.game.bestScore = user.best_score || 0;
       }
@@ -240,12 +256,22 @@ class UIManager {
     } catch (e) {}
   }
 
-  showHomeScreen() {
+  async showHomeScreen() {
     window.location.hash = '/';
     if (this.portalNav) this.portalNav.classList.remove('hidden');
     this.homeScreen.classList.remove('hidden');
     this.hudScreen.classList.add('hidden');
     this.refreshUserBadge();
+
+    if (window.apiClient && window.apiClient.token) {
+      try {
+        const freshUser = await window.apiClient.fetchMe();
+        if (freshUser) {
+          this.refreshUserBadge();
+        }
+      } catch (e) {}
+    }
+
     if (window.game) {
       window.game.state = 'MENU';
     }
@@ -259,7 +285,16 @@ class UIManager {
   updateHUD(data) {
     this.hudBest.textContent = data.bestScore.toLocaleString();
     this.hudScore.textContent = data.score.toLocaleString();
-    this.hudLevel.textContent = `LEVEL ${data.level}`;
+    this.hudLevel.textContent = `LVL ${data.level}`;
+
+    const targetEl = document.getElementById('hud-level-target');
+    if (targetEl) {
+      if (data.nextLevelScore) {
+        targetEl.textContent = `Next: ${data.nextLevelScore}`;
+      } else {
+        targetEl.textContent = `MAX`;
+      }
+    }
 
     let heartsHtml = '';
     for (let i = 0; i < 3; i++) {
@@ -293,7 +328,7 @@ class UIManager {
   }
 
   // Auth Flow
-  openAuthModal() {
+  async openAuthModal() {
     const user = window.apiClient.user;
     if (user) {
       document.getElementById('auth-step-register').classList.add('hidden');
@@ -303,12 +338,26 @@ class UIManager {
       document.getElementById('profile-username-display').textContent = user.username;
       document.getElementById('profile-email-display').textContent = user.email;
       document.getElementById('profile-best-score-display').textContent = (user.best_score || 0).toLocaleString();
+      this.openModal(this.authModal);
+
+      // Fetch fresh data in background and update modal fields
+      if (window.apiClient && window.apiClient.token) {
+        try {
+          const freshUser = await window.apiClient.fetchMe();
+          if (freshUser) {
+            document.getElementById('profile-username-display').textContent = freshUser.username;
+            document.getElementById('profile-email-display').textContent = freshUser.email;
+            document.getElementById('profile-best-score-display').textContent = (freshUser.best_score || 0).toLocaleString();
+            this.refreshUserBadge();
+          }
+        } catch (e) {}
+      }
     } else {
       document.getElementById('auth-step-register').classList.remove('hidden');
       document.getElementById('auth-step-otp').classList.add('hidden');
       document.getElementById('auth-step-profile').classList.add('hidden');
+      this.openModal(this.authModal);
     }
-    this.openModal(this.authModal);
   }
 
   handleLogout() {

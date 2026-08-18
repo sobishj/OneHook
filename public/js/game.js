@@ -210,6 +210,10 @@ class GameEngine {
     this.startTime = Date.now();
     this.activeChallenge = challengeContext;
 
+    if (window.apiClient && window.apiClient.user) {
+      this.bestScore = window.apiClient.user.best_score || 0;
+    }
+
     this.resetHook();
     this.updateHUD();
 
@@ -236,14 +240,27 @@ class GameEngine {
     }
   }
 
+  getNextLevelScore() {
+    if (this.level === 1) return 50;
+    if (this.level === 2) return 150;
+    if (this.level === 3) return 300;
+    if (this.level === 4) return 500;
+    return null;
+  }
+
   updateHUD() {
+    if (this.score > this.bestScore) {
+      this.bestScore = this.score;
+    }
+
     if (window.uiManager) {
       window.uiManager.updateHUD({
         score: this.score,
         bestScore: this.bestScore,
         lives: this.lives,
         level: this.level,
-        levelName: this.levelName
+        levelName: this.levelName,
+        nextLevelScore: this.getNextLevelScore()
       });
     }
   }
@@ -524,25 +541,38 @@ class GameEngine {
     this.state = 'GAMEOVER';
     window.soundManager.playGameOver();
 
-    const durationSeconds = (Date.now() - this.startTime) / 1000;
+    const durationSeconds = Math.max(1, (Date.now() - (this.startTime || (Date.now() - 1000))) / 1000);
+
+    let isNewBest = false;
+    if (this.score > this.bestScore) {
+      this.bestScore = this.score;
+      isNewBest = true;
+    }
+
+    let result = { bestScore: this.bestScore, isNewBest };
 
     // Submit score to backend with telemetry audit
-    let result = { bestScore: this.bestScore, isNewBest: false };
     if (window.apiClient && window.apiClient.token) {
       try {
-        result = await window.apiClient.submitScore(this.score, durationSeconds, this.catchesLog);
-        if (result.bestScore) {
-          this.bestScore = result.bestScore;
+        const apiRes = await window.apiClient.submitScore(this.score, durationSeconds, this.catchesLog);
+        if (apiRes) {
+          if (typeof apiRes.bestScore === 'number') {
+            this.bestScore = apiRes.bestScore;
+            result.bestScore = apiRes.bestScore;
+          }
+          if (typeof apiRes.isNewBest === 'boolean') {
+            result.isNewBest = apiRes.isNewBest;
+          }
         }
       } catch (err) {
         console.error('Score submission error:', err);
       }
-    } else {
-      // Local fallback
-      if (this.score > this.bestScore) {
-        this.bestScore = this.score;
-        result.isNewBest = true;
-      }
+    }
+
+    // Always ensure session storage is in sync with the new best score
+    if (window.apiClient && window.apiClient.user) {
+      window.apiClient.user.best_score = this.bestScore;
+      localStorage.setItem('onehook_user', JSON.stringify(window.apiClient.user));
     }
 
     // Complete active challenge if in challenge mode
@@ -556,6 +586,7 @@ class GameEngine {
     }
 
     if (window.uiManager) {
+      window.uiManager.refreshUserBadge();
       window.uiManager.showGameOverModal({
         score: this.score,
         bestScore: this.bestScore,
@@ -601,34 +632,34 @@ class GameEngine {
     const grad = this.ctx.createLinearGradient(0, 0, 0, this.height);
 
     switch (this.level) {
-      case 1: // Shallow Reef
-        grad.addColorStop(0, '#00b4d8');
-        grad.addColorStop(0.4, '#0077b6');
-        grad.addColorStop(1, '#03045e');
+      case 1: // Shallow Reef - Light Tropical Azure
+        grad.addColorStop(0, '#7dd3fc');
+        grad.addColorStop(0.45, '#38bdf8');
+        grad.addColorStop(1, '#0284c7');
         break;
-      case 2: // Mid Ocean
-        grad.addColorStop(0, '#0077b6');
-        grad.addColorStop(0.5, '#03045e');
-        grad.addColorStop(1, '#020122');
+      case 2: // Mid Ocean - Sky Blue
+        grad.addColorStop(0, '#38bdf8');
+        grad.addColorStop(0.5, '#0284c7');
+        grad.addColorStop(1, '#0369a1');
         break;
-      case 3: // Deep Azure
-        grad.addColorStop(0, '#03045e');
-        grad.addColorStop(0.6, '#020122');
-        grad.addColorStop(1, '#000814');
+      case 3: // Azure Depths
+        grad.addColorStop(0, '#0284c7');
+        grad.addColorStop(0.55, '#0369a1');
+        grad.addColorStop(1, '#075985');
         break;
       case 4: // Shark Waters
-        grad.addColorStop(0, '#020122');
-        grad.addColorStop(0.5, '#08121e');
-        grad.addColorStop(1, '#01050a');
+        grad.addColorStop(0, '#0369a1');
+        grad.addColorStop(0.5, '#075985');
+        grad.addColorStop(1, '#0c4a6e');
         break;
-      case 5: // Bioluminescent Abyss
-        grad.addColorStop(0, '#06101e');
-        grad.addColorStop(0.5, '#02060d');
-        grad.addColorStop(1, '#000205');
+      case 5: // Deep Abyss
+        grad.addColorStop(0, '#075985');
+        grad.addColorStop(0.5, '#0c4a6e');
+        grad.addColorStop(1, '#082f49');
         break;
       default:
-        grad.addColorStop(0, '#00b4d8');
-        grad.addColorStop(1, '#03045e');
+        grad.addColorStop(0, '#7dd3fc');
+        grad.addColorStop(1, '#0284c7');
     }
 
     this.ctx.fillStyle = grad;

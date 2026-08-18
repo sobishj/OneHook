@@ -40,18 +40,21 @@
     <!-- In-Game HUD Header -->
     <header id="hud-screen" class="hidden">
       <div class="hud-bar">
-        <!-- Left Side: Hub Button & Best Score -->
+        <!-- Left Side: Go Home Button & Best Score -->
         <div class="hud-side-group">
-          <button id="exit-to-hub-btn" class="hud-btn-text" title="Back to Game Hub">🏠 HUB</button>
+          <button id="exit-to-hub-btn" class="hud-btn-text" title="Go Home">🏠 GO HOME</button>
           <div class="hud-stat">
             <span class="hud-label">BEST</span>
             <span id="hud-best" class="hud-value">0</span>
           </div>
         </div>
 
-        <!-- Center: Current Score & Level Badge -->
+        <!-- Center: Current Score, Level & Next Level Target -->
         <div class="hud-center-group">
-          <span id="hud-level" class="hud-level-badge">LEVEL 1</span>
+          <div class="hud-level-wrap">
+            <span id="hud-level" class="hud-level-badge">LVL 1</span>
+            <span id="hud-level-target" class="hud-level-target">Next: 50</span>
+          </div>
           <div class="hud-stat hud-score-box">
             <span class="hud-label">SCORE</span>
             <span id="hud-score" class="hud-value highlight">0</span>
@@ -81,7 +84,7 @@
       <div class="section-header">
         <div class="section-title-wrap">
           <div class="yellow-accent-bar"></div>
-          <h2 class="section-title">FEATURED GAMES</h2>
+          <h2 class="section-title">PLAY & COMPETE</h2>
         </div>
         <div id="user-profile-badge" class="user-badge-header">
           👤 <span>Sign In</span>
@@ -138,14 +141,14 @@
         <!-- Signed-in Profile View -->
         <div id="auth-step-profile" class="hidden">
           <h2>👤 Player Profile</h2>
-          <div class="target-score-card" style="margin-top: 14px; margin-bottom: 14px;">
-            <span class="lbl">LOGGED IN AS</span>
-            <span id="profile-username-display" class="val" style="font-size: 1.5rem; color: #fff;">Ethan</span>
-            <span id="profile-email-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">ethan@example.com</span>
+          <div class="profile-card">
+            <span class="profile-card-lbl">LOGGED IN AS</span>
+            <span id="profile-username-display" class="profile-username">Ethan</span>
+            <span id="profile-email-display" class="profile-email">ethan@example.com</span>
           </div>
-          <div class="score-box" style="margin-bottom: 20px; align-items: center;">
-            <span class="lbl">PERSONAL BEST</span>
-            <span id="profile-best-score-display" class="val highlight">0</span>
+          <div class="profile-best-box">
+            <span class="profile-card-lbl">PERSONAL BEST</span>
+            <span id="profile-best-score-display" class="profile-best-val">0</span>
           </div>
           <button id="auth-logout-btn" class="btn btn-danger btn-full">LOG OUT</button>
         </div>
@@ -249,7 +252,7 @@
 
         <div class="gameover-actions">
           <button id="restart-btn" class="btn btn-yellow-play btn-full">PLAY AGAIN</button>
-          <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GAME HUB</button>
+          <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GO HOME</button>
         </div>
       </div>
     </div>

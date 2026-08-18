@@ -32,15 +32,21 @@ class Fish {
     this.isCaught = false;
     this.strugglePhase = 0;
 
-    // Direction shift timer for sharks & erratic fish
-    this.nextTurnTime = Date.now() + 2000 + Math.random() * 3000;
+    // Rare natural turning behavior (~12% of fish can turn, most swim straight through)
+    this.canTurn = Math.random() < 0.12;
+    this.isTurning = false;
+    this.turnProgress = 0;
+    this.turnsCount = 0;
+    this.maxTurns = 1;
+    this.facingScaleX = this.direction;
+    this.turnCooldown = 220 + Math.floor(Math.random() * 250);
   }
 
   updateLevel(newLevel) {
     this.level = newLevel;
     const levelScale = 1 + (this.level - 1) * 0.35;
     this.baseSpeed = this.rawSpeed * levelScale;
-    this.vx = this.direction * (this.baseSpeed + Math.random() * 0.3);
+    this.vx = (this.isTurning ? this.facingScaleX : this.direction) * (this.baseSpeed + Math.random() * 0.3);
     this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
   }
 
@@ -53,20 +59,57 @@ class Fish {
     this.swimPhase += this.swimSpeed;
 
     // Organic vertical sine bobbing
-    this.y += Math.sin(this.swimPhase * 0.7) * 0.4;
+    this.y += Math.sin(this.swimPhase * 0.7) * 0.35;
 
-    // Erratic turn logic for sharks and fast species
-    if (this.isErratic && Date.now() > this.nextTurnTime) {
-      this.direction *= -1;
-      this.vx = this.direction * (this.baseSpeed + Math.random() * 1.5);
-      this.nextTurnTime = Date.now() + 1500 + Math.random() * 2500;
+    // Natural smooth turn execution
+    if (this.isTurning) {
+      this.turnProgress += 0.045; // ~22 frames smooth turn (~0.35s)
+      
+      // Cosine interpolation from current direction to new direction for 3D flip effect
+      this.facingScaleX = this.direction * Math.cos(this.turnProgress * Math.PI);
+      
+      // Speed dips smoothly at turn apex and accelerates out
+      const speedMagnitude = Math.max(0.2, Math.abs(this.facingScaleX));
+      this.vx = Math.sign(this.facingScaleX || this.targetDirection) * this.baseSpeed * speedMagnitude;
+
+      if (this.turnProgress >= 1.0) {
+        this.direction = this.targetDirection;
+        this.facingScaleX = this.direction;
+        this.isTurning = false;
+        this.turnsCount++;
+        this.vx = this.direction * (this.baseSpeed + Math.random() * 0.2);
+      }
+    } else {
+      this.facingScaleX = this.direction;
+      this.vx = this.direction * this.baseSpeed;
+
+      // Safe & Rare Turning Check: STRICTLY NEVER TURN NEAR THE CENTER TO PREVENT DODGING / CHEATING
+      // Center zone [30% - 70%] is 100% turn-free!
+      if (this.canTurn && this.turnsCount < this.maxTurns) {
+        this.turnCooldown--;
+
+        const inLeftFlank = this.x > 80 && this.x < canvasWidth * 0.30;
+        const inRightFlank = this.x > canvasWidth * 0.70 && this.x < canvasWidth - 80;
+
+        // Rare trigger: requires cooldown expired + in outer side flank + rare random roll
+        if (this.turnCooldown <= 0 && (inLeftFlank || inRightFlank) && Math.random() < 0.015) {
+          // Trigger smooth natural turn
+          this.isTurning = true;
+          this.turnProgress = 0;
+          this.targetDirection = -this.direction;
+          
+          // Slight vertical depth shift for organic swimming
+          const depthDelta = (Math.random() - 0.5) * 40;
+          this.targetY = Math.min(canvasHeight * 0.80, Math.max(canvasHeight * 0.24, this.y + depthDelta));
+        }
+      }
     }
 
     this.x += this.vx;
 
     // Smoothly drift toward targetY if set
-    if (Math.abs(this.y - this.targetY) > 2) {
-      this.y += (this.targetY - this.y) * 0.02;
+    if (Math.abs(this.y - this.targetY) > 1.5) {
+      this.y += (this.targetY - this.y) * 0.025;
     }
   }
 
@@ -84,10 +127,10 @@ class Fish {
       // Wiggle violently when caught
       ctx.rotate((Math.sin(this.strugglePhase) * 0.3) + Math.PI / 2);
     } else {
-      if (this.direction === -1) {
-        ctx.scale(-1, 1);
-      }
-      // Slight pitch based on vertical motion
+      // Smooth 3D-like scale transition for natural turning
+      ctx.scale(this.facingScaleX, 1);
+
+      // Slight pitch based on vertical motion + turning tilt
       const pitch = Math.sin(this.swimPhase * 0.7) * 0.05;
       ctx.rotate(pitch);
     }
@@ -141,429 +184,691 @@ class Fish {
   }
 
   drawClownfish(ctx, w, h, tailWiggle) {
-    // Tail
-    ctx.fillStyle = '#ff6600';
+    // 1. Fins (Dorsal, Pelvic & Anal) with delicate dark accents
+    ctx.fillStyle = '#ff6a00';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+
+    // Dorsal Fin
     ctx.beginPath();
-    ctx.moveTo(-w / 2 + 5, 0);
-    ctx.lineTo(-w / 2 - 12 + tailWiggle, -h / 2 + 2);
-    ctx.lineTo(-w / 2 - 12 + tailWiggle, h / 2 - 2);
+    ctx.moveTo(-w * 0.15, -h * 0.35);
+    ctx.quadraticCurveTo(0, -h * 0.72, w * 0.2, -h * 0.3);
+    ctx.lineTo(w * 0.08, -h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Pelvic & Anal Fins
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.1, h * 0.35);
+    ctx.quadraticCurveTo(0, h * 0.65, w * 0.15, h * 0.32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Caudal Fin (Tail Fan with natural undulating wiggle)
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.quadraticCurveTo(-w * 0.45, -h * 0.42, -w * 0.55 + tailWiggle, -h * 0.46);
+    ctx.quadraticCurveTo(-w * 0.48 + tailWiggle * 0.5, 0, -w * 0.55 + tailWiggle, h * 0.46);
+    ctx.quadraticCurveTo(-w * 0.45, h * 0.42, -w * 0.38, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 3. Hydrodynamic Body with organic orange gradient
+    const bodyGrad = ctx.createRadialGradient(w * 0.1, -h * 0.1, 2, 0, 0, w * 0.55);
+    bodyGrad.addColorStop(0, '#ff9638');
+    bodyGrad.addColorStop(0.5, '#ff6e00');
+    bodyGrad.addColorStop(1, '#e05200');
+
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.bezierCurveTo(-w * 0.35, -h * 0.52, w * 0.2, -h * 0.5, w * 0.42, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.45, 0, w * 0.42, h * 0.1, w * 0.38, h * 0.2);
+    ctx.bezierCurveTo(w * 0.15, h * 0.52, -w * 0.32, h * 0.45, -w * 0.38, 0);
     ctx.closePath();
     ctx.fill();
 
-    // Body
-    ctx.fillStyle = '#ff7700';
+    // 4. Natural Curved White Bands (with subtle dark velvety borders)
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1.2;
+
+    // Head Band (curving behind the eye)
     ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.moveTo(w * 0.15, -h * 0.44);
+    ctx.quadraticCurveTo(w * 0.22, 0, w * 0.12, h * 0.44);
+    ctx.lineTo(w * 0.05, h * 0.45);
+    ctx.quadraticCurveTo(w * 0.14, 0, w * 0.08, -h * 0.44);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Middle Band (organic hourglass curve)
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.08, -h * 0.44);
+    ctx.quadraticCurveTo(-w * 0.02, 0, -w * 0.1, h * 0.44);
+    ctx.lineTo(-w * 0.17, h * 0.38);
+    ctx.quadraticCurveTo(-w * 0.11, 0, -w * 0.15, -h * 0.40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Tail Peduncle Band
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.32, -h * 0.22);
+    ctx.lineTo(-w * 0.32, h * 0.22);
+    ctx.lineTo(-w * 0.37, h * 0.18);
+    ctx.lineTo(-w * 0.37, -h * 0.18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 5. Pectoral Fin (undulating translucent side fin)
+    const pecWiggle = Math.sin(this.swimPhase * 1.5) * 3.5;
+    ctx.fillStyle = 'rgba(255, 145, 45, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.05, h * 0.05);
+    ctx.quadraticCurveTo(w * 0.12 + pecWiggle, h * 0.3, -w * 0.05 + pecWiggle, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 6. Realistic Fish Eye (obsidian pupil with amber ring and specular light reflection)
+    ctx.fillStyle = '#ff9900';
+    ctx.beginPath();
+    ctx.arc(w * 0.28, -h * 0.1, 3.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // White Stripes
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-w * 0.15, -h * 0.45, w * 0.12, h * 0.9);
-    ctx.fillRect(w * 0.15, -h * 0.35, w * 0.1, h * 0.7);
-
-    // Stripe Outlines
-    ctx.strokeStyle = '#222222';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(-w * 0.15, -h * 0.45, w * 0.12, h * 0.9);
-
-    // Eye
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.15, 3.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.28, -h * 0.1, 2.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#000000';
+
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(w * 0.32, -h * 0.15, 1.8, 0, Math.PI * 2);
+    ctx.arc(w * 0.26, -h * 0.12, 1.1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawBlueTang(ctx, w, h, tailWiggle) {
-    // Tail (Yellow)
-    ctx.fillStyle = '#ffcc00';
+    // 1. Caudal Fin (Yellow crescent tail)
+    ctx.fillStyle = '#facc15';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 14 + tailWiggle, -h / 2);
-    ctx.lineTo(-w / 2 - 14 + tailWiggle, h / 2);
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.quadraticCurveTo(-w * 0.45, -h * 0.45, -w * 0.55 + tailWiggle, -h * 0.5);
+    ctx.quadraticCurveTo(-w * 0.46 + tailWiggle * 0.5, 0, -w * 0.55 + tailWiggle, h * 0.5);
+    ctx.quadraticCurveTo(-w * 0.45, h * 0.45, -w * 0.38, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Hydrodynamic Oval Body with rich royal blue gradient
+    const tangGrad = ctx.createRadialGradient(w * 0.1, -h * 0.1, 2, 0, 0, w * 0.55);
+    tangGrad.addColorStop(0, '#3b82f6');
+    tangGrad.addColorStop(0.5, '#1d4ed8');
+    tangGrad.addColorStop(1, '#1e3a8a');
+
+    ctx.fillStyle = tangGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.bezierCurveTo(-w * 0.35, -h * 0.55, w * 0.2, -h * 0.52, w * 0.42, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.45, 0, w * 0.42, h * 0.1, w * 0.38, h * 0.22);
+    ctx.bezierCurveTo(w * 0.15, h * 0.56, -w * 0.32, h * 0.5, -w * 0.38, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Body (Deep Blue)
-    ctx.fillStyle = '#1e50ff';
+    // 3. Velvet Black Palette Marking
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h * 0.55, 0, 0, Math.PI * 2);
+    ctx.moveTo(w * 0.1, -h * 0.38);
+    ctx.quadraticCurveTo(-w * 0.1, -h * 0.42, -w * 0.35, -h * 0.15);
+    ctx.quadraticCurveTo(-w * 0.25, 0, -w * 0.35, h * 0.15);
+    ctx.quadraticCurveTo(-w * 0.1, h * 0.38, w * 0.05, h * 0.15);
+    ctx.quadraticCurveTo(0, 0, w * 0.1, -h * 0.38);
+    ctx.closePath();
     ctx.fill();
 
-    // Dark Accent Stripe
-    ctx.fillStyle = '#0b1640';
+    // 4. Realistic Eye
+    ctx.fillStyle = '#1e3a8a';
     ctx.beginPath();
-    ctx.ellipse(-w * 0.05, 0, w * 0.3, h * 0.25, 0, 0, Math.PI * 2);
+    ctx.arc(w * 0.28, -h * 0.12, 3.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eye
+    ctx.fillStyle = '#020617';
+    ctx.beginPath();
+    ctx.arc(w * 0.28, -h * 0.12, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(w * 0.28, -h * 0.15, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.15, 1.8, 0, Math.PI * 2);
+    ctx.arc(w * 0.26, -h * 0.14, 1.1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawYellowSailfin(ctx, w, h, tailWiggle) {
-    // Large top fin
-    ctx.fillStyle = '#ffd700';
+    // 1. High Dorsal & Ventral Fins (Translucent lemon yellow)
+    ctx.fillStyle = '#fde047';
+    ctx.strokeStyle = '#ca8a04';
+    ctx.lineWidth = 1;
+
+    // Tall Dorsal Fin
     ctx.beginPath();
-    ctx.moveTo(-w * 0.2, -h * 0.4);
-    ctx.lineTo(0, -h * 0.9);
-    ctx.lineTo(w * 0.2, -h * 0.4);
+    ctx.moveTo(-w * 0.15, -h * 0.4);
+    ctx.quadraticCurveTo(0, -h * 0.85, w * 0.18, -h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Ventral Fin
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.15, h * 0.4);
+    ctx.quadraticCurveTo(0, h * 0.8, w * 0.18, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Caudal Tail
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.quadraticCurveTo(-w * 0.45, -h * 0.35, -w * 0.52 + tailWiggle, -h * 0.4);
+    ctx.quadraticCurveTo(-w * 0.45 + tailWiggle * 0.5, 0, -w * 0.52 + tailWiggle, h * 0.4);
+    ctx.quadraticCurveTo(-w * 0.45, h * 0.35, -w * 0.35, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 3. Disc Body with warm yellow gradient
+    const yellowGrad = ctx.createRadialGradient(w * 0.08, -h * 0.05, 2, 0, 0, w * 0.5);
+    yellowGrad.addColorStop(0, '#fef08a');
+    yellowGrad.addColorStop(0.5, '#eab308');
+    yellowGrad.addColorStop(1, '#ca8a04');
+
+    ctx.fillStyle = yellowGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.bezierCurveTo(-w * 0.28, -h * 0.58, w * 0.18, -h * 0.55, w * 0.42, -h * 0.02);
+    ctx.bezierCurveTo(w * 0.45, 0, w * 0.42, h * 0.05, w * 0.38, h * 0.15);
+    ctx.bezierCurveTo(w * 0.15, h * 0.58, -w * 0.25, h * 0.55, -w * 0.35, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Tail
+    // 4. White Scalpel Spine dot near tail
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 12 + tailWiggle, -h / 3);
-    ctx.lineTo(-w / 2 - 12 + tailWiggle, h / 3);
+    ctx.arc(-w * 0.28, 0, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Body
-    ctx.fillStyle = '#ffae00';
+    // 5. Realistic Eye
+    ctx.fillStyle = '#ca8a04';
     ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.arc(w * 0.26, -h * 0.1, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eye
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.1, 2.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.26, -h * 0.1, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.24, -h * 0.12, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawAngelfish(ctx, w, h, tailWiggle) {
-    // Elegant fins
-    ctx.fillStyle = '#4488ff';
+    // 1. Long Elegant Triangular Fins
+    ctx.fillStyle = '#38bdf8';
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 1;
+
+    // Tall Dorsal Filament
     ctx.beginPath();
     ctx.moveTo(-w * 0.1, -h * 0.4);
-    ctx.lineTo(-w * 0.2, -h * 1.1);
-    ctx.lineTo(w * 0.2, -h * 0.4);
+    ctx.lineTo(-w * 0.2, -h * 1.15);
+    ctx.lineTo(w * 0.18, -h * 0.35);
+    ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 
+    // Long Ventral Filament
     ctx.beginPath();
     ctx.moveTo(-w * 0.1, h * 0.4);
-    ctx.lineTo(-w * 0.2, h * 1.1);
-    ctx.lineTo(w * 0.2, h * 0.4);
+    ctx.lineTo(-w * 0.2, h * 1.15);
+    ctx.lineTo(w * 0.18, h * 0.35);
+    ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 
-    // Tail
-    ctx.fillStyle = '#66aaff';
+    // 2. Caudal Tail
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 15 + tailWiggle, -h / 2);
-    ctx.lineTo(-w / 2 - 15 + tailWiggle, h / 2);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.lineTo(-w * 0.52 + tailWiggle, -h * 0.45);
+    ctx.lineTo(-w * 0.52 + tailWiggle, h * 0.45);
+    ctx.closePath();
     ctx.fill();
+    ctx.stroke();
 
-    // Diamond Body
-    ctx.fillStyle = '#e0f0ff';
+    // 3. Diamond Disc Body (Silver-Azure Gradient)
+    const angelGrad = ctx.createLinearGradient(-w * 0.3, 0, w * 0.3, 0);
+    angelGrad.addColorStop(0, '#bae6fd');
+    angelGrad.addColorStop(0.5, '#f0f9ff');
+    angelGrad.addColorStop(1, '#7dd3fc');
+
+    ctx.fillStyle = angelGrad;
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(0, -h / 2);
-    ctx.lineTo(w / 2, 0);
-    ctx.lineTo(0, h / 2);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.quadraticCurveTo(-w * 0.1, -h * 0.55, w * 0.38, 0);
+    ctx.quadraticCurveTo(-w * 0.1, h * 0.55, -w * 0.35, 0);
     ctx.closePath();
     ctx.fill();
 
-    // Stripes
-    ctx.fillStyle = '#2255aa';
-    ctx.fillRect(-w * 0.2, -h * 0.4, w * 0.1, h * 0.8);
-    ctx.fillRect(w * 0.05, -h * 0.3, w * 0.08, h * 0.6);
-
-    // Eye
-    ctx.fillStyle = '#000000';
+    // 4. Subtle Iridescent Blue Vertical Stripes
+    ctx.fillStyle = 'rgba(2, 132, 199, 0.45)';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.1, 3, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.12, -h * 0.45);
+    ctx.lineTo(-w * 0.04, -h * 0.45);
+    ctx.lineTo(-w * 0.04, h * 0.45);
+    ctx.lineTo(-w * 0.12, h * 0.45);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(w * 0.1, -h * 0.35);
+    ctx.lineTo(w * 0.16, -h * 0.35);
+    ctx.lineTo(w * 0.16, h * 0.35);
+    ctx.lineTo(w * 0.1, h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    // 5. Eye
+    ctx.fillStyle = '#0369a1';
+    ctx.beginPath();
+    ctx.arc(w * 0.24, -h * 0.08, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(w * 0.24, -h * 0.08, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.22, -h * 0.1, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawRedSnapper(ctx, w, h, tailWiggle) {
-    // Tail
-    ctx.fillStyle = '#cc2233';
+    // 1. Spiny Dorsal Fin
+    ctx.fillStyle = '#dc2626';
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 16 + tailWiggle, -h * 0.45);
-    ctx.lineTo(-w / 2 - 16 + tailWiggle, h * 0.45);
+    ctx.moveTo(-w * 0.25, -h * 0.35);
+    ctx.quadraticCurveTo(0, -h * 0.75, w * 0.2, -h * 0.35);
+    ctx.closePath();
     ctx.fill();
 
-    // Body
-    ctx.fillStyle = '#ff3344';
+    // 2. Caudal Fork Tail
     ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, -h * 0.48);
+    ctx.lineTo(-w * 0.45 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, h * 0.48);
+    ctx.closePath();
     ctx.fill();
 
-    // Dorsal Fin
-    ctx.fillStyle = '#aa1122';
+    // 3. Muscular Crimson Predatory Body
+    const snapperGrad = ctx.createRadialGradient(w * 0.1, -h * 0.1, 2, 0, 0, w * 0.5);
+    snapperGrad.addColorStop(0, '#f87171');
+    snapperGrad.addColorStop(0.5, '#ef4444');
+    snapperGrad.addColorStop(1, '#b91c1c');
+
+    ctx.fillStyle = snapperGrad;
     ctx.beginPath();
-    ctx.moveTo(-w * 0.3, -h * 0.4);
-    ctx.lineTo(0, -h * 0.8);
-    ctx.lineTo(w * 0.2, -h * 0.4);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.bezierCurveTo(-w * 0.3, -h * 0.5, w * 0.2, -h * 0.45, w * 0.45, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.48, 0, w * 0.45, h * 0.1, w * 0.4, h * 0.2);
+    ctx.bezierCurveTo(w * 0.15, h * 0.5, -w * 0.25, h * 0.45, -w * 0.35, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Eye
-    ctx.fillStyle = '#ffff00';
+    // 4. Eye
+    ctx.fillStyle = '#fef08a';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.12, 3.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, -h * 0.1, 3.8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#000000';
+
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(w * 0.32, -h * 0.12, 1.8, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, -h * 0.1, 2.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.28, -h * 0.12, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawBarracuda(ctx, w, h, tailWiggle) {
-    // Long sleek silver body
-    ctx.fillStyle = '#99aabb';
+    // 1. Forked Caudal Tail
+    ctx.fillStyle = '#64748b';
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 15 + tailWiggle, -h * 0.4);
-    ctx.lineTo(-w / 2 - 15 + tailWiggle, h * 0.4);
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, -h * 0.45);
+    ctx.lineTo(-w * 0.46 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, h * 0.45);
+    ctx.closePath();
     ctx.fill();
 
-    // Main Body
-    ctx.fillStyle = '#ccddee';
+    // 2. Long Sleek Silver Torpedo Body
+    const barraGrad = ctx.createLinearGradient(0, -h * 0.4, 0, h * 0.4);
+    barraGrad.addColorStop(0, '#475569');
+    barraGrad.addColorStop(0.4, '#cbd5e1');
+    barraGrad.addColorStop(1, '#f1f5f9');
+
+    ctx.fillStyle = barraGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.bezierCurveTo(-w * 0.3, -h * 0.4, w * 0.3, -h * 0.3, w * 0.5, 0);
+    ctx.bezierCurveTo(w * 0.3, h * 0.3, -w * 0.3, h * 0.4, -w * 0.4, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Dark stripes along back
-    ctx.fillStyle = '#445566';
-    for (let i = -0.3; i <= 0.2; i += 0.12) {
-      ctx.fillRect(w * i, -h * 0.45, w * 0.04, h * 0.35);
+    // 3. Subtle Chevron Bars
+    ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
+    ctx.lineWidth = 1.5;
+    for (let i = -0.25; i <= 0.2; i += 0.08) {
+      ctx.beginPath();
+      ctx.moveTo(w * i, -h * 0.25);
+      ctx.lineTo(w * (i + 0.03), 0);
+      ctx.lineTo(w * i, h * 0.25);
+      ctx.stroke();
     }
 
-    // Eye
-    ctx.fillStyle = '#000000';
+    // 4. Sharp Eye
+    ctx.fillStyle = '#f8fafc';
     ctx.beginPath();
-    ctx.arc(w * 0.38, -h * 0.1, 3, 0, Math.PI * 2);
+    ctx.arc(w * 0.36, -h * 0.08, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(w * 0.36, -h * 0.08, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.34, -h * 0.1, 0.9, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawSwordfish(ctx, w, h, tailWiggle) {
-    // Powerful tail
-    ctx.fillStyle = '#1c3144';
+    // 1. Crescent Tail
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
     ctx.moveTo(-w * 0.35, 0);
-    ctx.lineTo(-w * 0.35 - 20 + tailWiggle, -h * 0.7);
-    ctx.lineTo(-w * 0.35 - 20 + tailWiggle, h * 0.7);
+    ctx.lineTo(-w * 0.52 + tailWiggle, -h * 0.7);
+    ctx.lineTo(-w * 0.42 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.52 + tailWiggle, h * 0.7);
+    ctx.closePath();
     ctx.fill();
 
-    // Dorsal Fin
-    ctx.fillStyle = '#0f1d2a';
+    // 2. High Curved Dorsal Sail
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.moveTo(-w * 0.1, -h * 0.4);
-    ctx.lineTo(0, -h * 1.2);
-    ctx.lineTo(w * 0.2, -h * 0.4);
+    ctx.moveTo(-w * 0.08, -h * 0.35);
+    ctx.quadraticCurveTo(0, -h * 1.1, w * 0.18, -h * 0.3);
+    ctx.closePath();
     ctx.fill();
 
-    // Body
-    ctx.fillStyle = '#2b4c6f';
+    // 3. Muscular Streamlined Navy Body
+    const swordGrad = ctx.createLinearGradient(0, -h * 0.4, 0, h * 0.4);
+    swordGrad.addColorStop(0, '#0f172a');
+    swordGrad.addColorStop(0.5, '#1e3a8a');
+    swordGrad.addColorStop(1, '#e0f2fe');
+
+    ctx.fillStyle = swordGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 0, w * 0.38, h / 2, 0, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.bezierCurveTo(-w * 0.25, -h * 0.45, w * 0.2, -h * 0.4, w * 0.35, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.25, h * 0.4, -w * 0.25, h * 0.45, -w * 0.35, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Sword (Bill)
-    ctx.fillStyle = '#d0e0f0';
+    // 4. Sharp Sword Bill
+    ctx.fillStyle = '#94a3b8';
     ctx.beginPath();
-    ctx.moveTo(w * 0.3, -h * 0.1);
+    ctx.moveTo(w * 0.35, -h * 0.05);
     ctx.lineTo(w * 0.65, 0);
-    ctx.lineTo(w * 0.3, h * 0.1);
+    ctx.lineTo(w * 0.35, h * 0.05);
+    ctx.closePath();
     ctx.fill();
 
-    // Eye
+    // 5. Eye
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.arc(w * 0.24, -h * 0.1, 3.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(w * 0.24, -h * 0.1, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(w * 0.2, -h * 0.15, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(w * 0.22, -h * 0.15, 2, 0, Math.PI * 2);
+    ctx.arc(w * 0.22, -h * 0.12, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawMantaRay(ctx, w, h, tailWiggle) {
-    // Long tail whip
-    ctx.strokeStyle = '#223344';
-    ctx.lineWidth = 2;
+    // 1. Long Whip Tail
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.moveTo(-w * 0.2, 0);
-    ctx.quadraticCurveTo(-w * 0.5, tailWiggle, -w * 0.7, tailWiggle * 1.5);
+    ctx.quadraticCurveTo(-w * 0.45, tailWiggle, -w * 0.68, tailWiggle * 1.5);
     ctx.stroke();
 
-    // Wing flapping animation
+    // 2. Wing Flap Animation
     const wingFlap = Math.sin(this.swimPhase * 0.8) * 8;
 
-    // Body & Wings
-    ctx.fillStyle = '#2d3b4e';
+    // 3. Diamond Wing Body with smooth shading
+    const mantaGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, w * 0.45);
+    mantaGrad.addColorStop(0, '#334155');
+    mantaGrad.addColorStop(0.7, '#1e293b');
+    mantaGrad.addColorStop(1, '#0f172a');
+
+    ctx.fillStyle = mantaGrad;
     ctx.beginPath();
     ctx.moveTo(w * 0.35, 0);
-    ctx.quadraticCurveTo(0, -h * 0.9 - wingFlap, -w * 0.3, -h * 0.2);
-    ctx.lineTo(-w * 0.3, h * 0.2);
+    ctx.quadraticCurveTo(0, -h * 0.9 - wingFlap, -w * 0.28, -h * 0.2);
+    ctx.lineTo(-w * 0.28, h * 0.2);
     ctx.quadraticCurveTo(0, h * 0.9 + wingFlap, w * 0.35, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // White belly highlights on horn tips
-    ctx.fillStyle = '#eef5ff';
+    // 4. Cephalic Horn Highlights
+    ctx.fillStyle = '#e2e8f0';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.25, 3, 0, Math.PI * 2);
-    ctx.arc(w * 0.3, h * 0.25, 3, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, -h * 0.2, 2.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, h * 0.2, 2.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawShark(ctx, w, h, tailWiggle) {
-    // Powerful Tail Fin
-    ctx.fillStyle = '#3a4a58';
+    // 1. Tail Fin
+    ctx.fillStyle = '#334155';
     ctx.beginPath();
     ctx.moveTo(-w * 0.38, 0);
-    ctx.lineTo(-w * 0.38 - 25 + tailWiggle, -h * 0.8);
-    ctx.lineTo(-w * 0.38 - 10 + tailWiggle, 0);
-    ctx.lineTo(-w * 0.38 - 25 + tailWiggle, h * 0.6);
+    ctx.lineTo(-w * 0.56 + tailWiggle, -h * 0.75);
+    ctx.lineTo(-w * 0.44 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.56 + tailWiggle, h * 0.55);
+    ctx.closePath();
     ctx.fill();
 
-    // Iconic Dorsal Fin
-    ctx.fillStyle = '#2c3945';
+    // 2. Dorsal Fin
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.moveTo(-w * 0.1, -h * 0.4);
-    ctx.lineTo(w * 0.05, -h * 1.1);
-    ctx.lineTo(w * 0.25, -h * 0.35);
+    ctx.moveTo(-w * 0.08, -h * 0.35);
+    ctx.lineTo(w * 0.06, -h * 1.05);
+    ctx.lineTo(w * 0.22, -h * 0.32);
+    ctx.closePath();
     ctx.fill();
 
-    // Main Body
-    ctx.fillStyle = '#4c5c6c';
+    // 3. Counter-shaded Body (Dark slate top, clean light underbelly)
+    const sharkGrad = ctx.createLinearGradient(0, -h * 0.4, 0, h * 0.4);
+    sharkGrad.addColorStop(0, '#1e293b');
+    sharkGrad.addColorStop(0.55, '#475569');
+    sharkGrad.addColorStop(1, '#f1f5f9');
+
+    ctx.fillStyle = sharkGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 0, w * 0.42, h * 0.45, 0, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.bezierCurveTo(-w * 0.28, -h * 0.48, w * 0.25, -h * 0.42, w * 0.46, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.42, h * 0.15, w * 0.2, h * 0.45, -w * 0.38, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // White Underbelly
-    ctx.fillStyle = '#e0e8f0';
-    ctx.beginPath();
-    ctx.ellipse(0, h * 0.15, w * 0.38, h * 0.25, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Gills
-    ctx.strokeStyle = '#222d36';
-    ctx.lineWidth = 2;
+    // 4. Gill Slits
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.arc(w * 0.05 + i * 5, 0, 8, Math.PI * 0.7, Math.PI * 1.3);
+      ctx.arc(w * 0.08 + i * 4, 0, 6, Math.PI * 0.7, Math.PI * 1.3);
       ctx.stroke();
     }
 
-    // Fierce Eye
-    ctx.fillStyle = '#111111';
+    // 5. Intense Predatory Eye
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(w * 0.28, -h * 0.12, 3.5, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, -h * 0.1, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Sharp Teeth
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(w * 0.32, h * 0.1);
-    ctx.lineTo(w * 0.35, h * 0.18);
-    ctx.lineTo(w * 0.38, h * 0.1);
+    ctx.arc(w * 0.28, -h * 0.12, 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawJellyfish(ctx, w, h, tailWiggle) {
-    // Pulse animation
     const pulse = Math.sin(this.swimPhase * 1.5) * 4;
 
-    // Glowing Outer Dome
-    ctx.fillStyle = 'rgba(255, 100, 200, 0.6)';
+    // 1. Translucent Umbrella Dome
+    const bellGrad = ctx.createRadialGradient(0, -pulse, 2, 0, -pulse, w * 0.5);
+    bellGrad.addColorStop(0, 'rgba(244, 114, 182, 0.85)');
+    bellGrad.addColorStop(0.7, 'rgba(236, 72, 153, 0.5)');
+    bellGrad.addColorStop(1, 'rgba(192, 132, 252, 0.2)');
+
+    ctx.fillStyle = bellGrad;
     ctx.beginPath();
-    ctx.arc(0, -pulse, w / 2, Math.PI, 0);
-    ctx.quadraticCurveTo(0, pulse, -w / 2, -pulse);
+    ctx.arc(0, -pulse, w * 0.45, Math.PI, 0);
+    ctx.quadraticCurveTo(0, pulse * 0.5, -w * 0.45, -pulse);
+    ctx.closePath();
     ctx.fill();
 
-    // Bioluminescent Core
-    ctx.fillStyle = 'rgba(255, 220, 255, 0.8)';
+    // 2. Bioluminescent Core
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.beginPath();
-    ctx.arc(0, -pulse - 5, w / 4, 0, Math.PI * 2);
+    ctx.arc(0, -pulse - 4, w * 0.2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Wavy Tentacles
-    ctx.strokeStyle = 'rgba(255, 150, 220, 0.7)';
-    ctx.lineWidth = 2;
-    for (let i = -w * 0.35; i <= w * 0.35; i += w * 0.18) {
+    // 3. Flowing Wavy Tentacles
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.75)';
+    ctx.lineWidth = 1.8;
+    for (let i = -w * 0.3; i <= w * 0.3; i += w * 0.15) {
       ctx.beginPath();
       ctx.moveTo(i, -pulse);
-      ctx.quadraticCurveTo(i + tailWiggle, h * 0.8, i - tailWiggle, h * 1.4);
+      ctx.quadraticCurveTo(i + tailWiggle, h * 0.7, i - tailWiggle, h * 1.3);
       ctx.stroke();
     }
   }
 
   drawGoldenFish(ctx, w, h, tailWiggle) {
-    // Sparkling aura
-    ctx.shadowColor = '#ffe066';
-    ctx.shadowBlur = 15;
+    // 1. Flowing Golden Tail Fins
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.85)';
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 1;
 
-    // Tail
-    ctx.fillStyle = '#ffaa00';
     ctx.beginPath();
-    ctx.moveTo(-w / 2, 0);
-    ctx.lineTo(-w / 2 - 18 + tailWiggle, -h * 0.6);
-    ctx.lineTo(-w / 2 - 18 + tailWiggle, h * 0.6);
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.quadraticCurveTo(-w * 0.48, -h * 0.6, -w * 0.6 + tailWiggle, -h * 0.65);
+    ctx.quadraticCurveTo(-w * 0.46 + tailWiggle * 0.5, 0, -w * 0.6 + tailWiggle, h * 0.65);
+    ctx.quadraticCurveTo(-w * 0.48, h * 0.6, -w * 0.35, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Shimmering Gold Body
+    const goldGrad = ctx.createRadialGradient(w * 0.1, -h * 0.1, 2, 0, 0, w * 0.55);
+    goldGrad.addColorStop(0, '#fef08a');
+    goldGrad.addColorStop(0.4, '#fbbf24');
+    goldGrad.addColorStop(0.8, '#f59e0b');
+    goldGrad.addColorStop(1, '#d97706');
+
+    ctx.fillStyle = goldGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.35, 0);
+    ctx.bezierCurveTo(-w * 0.3, -h * 0.52, w * 0.2, -h * 0.48, w * 0.42, -h * 0.05);
+    ctx.bezierCurveTo(w * 0.45, 0, w * 0.42, h * 0.1, w * 0.38, h * 0.2);
+    ctx.bezierCurveTo(w * 0.15, h * 0.52, -w * 0.28, h * 0.48, -w * 0.35, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Body
-    const grad = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
-    grad.addColorStop(0, '#ffbb00');
-    grad.addColorStop(0.5, '#fff2a3');
-    grad.addColorStop(1, '#ff9900');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eye
-    ctx.shadowBlur = 0;
+    // 3. Eye
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(w * 0.28, -h * 0.12, 4, 0, Math.PI * 2);
+    ctx.arc(w * 0.28, -h * 0.1, 3.8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#000000';
+
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.12, 2, 0, Math.PI * 2);
+    ctx.arc(w * 0.28, -h * 0.1, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.26, -h * 0.12, 1.1, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawWhale(ctx, w, h, tailWiggle) {
-    // Massive Tail Fluke
-    ctx.fillStyle = '#1c2d42';
+    // 1. Tail Fluke
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.moveTo(-w * 0.4, 0);
-    ctx.lineTo(-w * 0.4 - 30 + tailWiggle, -h * 0.9);
-    ctx.lineTo(-w * 0.4 - 20, 0);
-    ctx.lineTo(-w * 0.4 - 30 + tailWiggle, h * 0.9);
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, -h * 0.85);
+    ctx.lineTo(-w * 0.46 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, h * 0.85);
+    ctx.closePath();
     ctx.fill();
 
-    // Huge Body
-    ctx.fillStyle = '#283e58';
+    // 2. Massive Hydrodynamic Body
+    const whaleGrad = ctx.createLinearGradient(0, -h * 0.45, 0, h * 0.45);
+    whaleGrad.addColorStop(0, '#1e293b');
+    whaleGrad.addColorStop(0.55, '#334155');
+    whaleGrad.addColorStop(1, '#94a3b8');
+
+    ctx.fillStyle = whaleGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 0, w * 0.45, h * 0.48, 0, 0, Math.PI * 2);
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.bezierCurveTo(-w * 0.25, -h * 0.52, w * 0.3, -h * 0.48, w * 0.48, 0);
+    ctx.bezierCurveTo(w * 0.3, h * 0.48, -w * 0.25, h * 0.52, -w * 0.38, 0);
+    ctx.closePath();
     ctx.fill();
 
-    // Belly Grooves
-    ctx.fillStyle = '#8ca6c4';
+    // 3. Eye
+    ctx.fillStyle = '#0f172a';
     ctx.beginPath();
-    ctx.ellipse(w * 0.05, h * 0.2, w * 0.35, h * 0.2, 0, 0, Math.PI * 2);
+    ctx.arc(w * 0.32, -h * 0.08, 3.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eye
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(w * 0.3, -h * 0.1, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(w * 0.31, -h * 0.1, 2, 0, Math.PI * 2);
+    ctx.arc(w * 0.3, -h * 0.1, 1.2, 0, Math.PI * 2);
     ctx.fill();
   }
 }
