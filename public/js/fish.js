@@ -54,9 +54,9 @@ class Fish {
     this.isScared = true;
     this.scareTimer = 60 + Math.random() * 60; // Panic for 1-2 seconds
 
-    // 50% chance to turn away if swimming towards the hook
+    // 100% chance to turn away if swimming towards the hook
     const movingTowardsScare = (this.direction === 1 && scareX > this.x) || (this.direction === -1 && scareX < this.x);
-    if (movingTowardsScare && Math.random() > 0.5) {
+    if (movingTowardsScare) {
       this.isTurning = true;
       this.turnProgress = 0;
       this.targetDirection = -this.direction;
@@ -67,7 +67,7 @@ class Fish {
     this.targetY = Math.min(canvasHeight * 0.80, Math.max(canvasHeight * 0.20, this.y + depthDelta));
   }
 
-  update(dt, canvasWidth, canvasHeight) {
+  update(dt, canvasWidth, canvasHeight, engine) {
     if (this.isCaught) {
       this.strugglePhase += 0.4;
       return;
@@ -132,6 +132,21 @@ class Fish {
     }
 
     this.x += this.vx;
+
+    // Spawn bubbles when moving fast (scared) or turning
+    if (engine && (this.isScared || this.isTurning)) {
+      if (Math.random() < (this.isScared ? 0.05 : 0.015)) {
+        const fishWidthFactor = this.width / 40; // Normalize size to default
+        engine.bubbles.push({
+          x: this.direction === 1 ? this.x - this.width/2 : this.x + this.width/2,
+          y: this.y + (Math.random() * 10 - 5),
+          radius: (1.5 + Math.random() * 2) * fishWidthFactor, // bigger bubbles for bigger fish
+          speed: 1.0 + Math.random() * 2.0,
+          wobble: Math.random() * Math.PI * 2,
+          alpha: 0.4 + Math.random() * 0.3
+        });
+      }
+    }
 
     // Smoothly drift toward targetY if set
     if (Math.abs(this.y - this.targetY) > 1.5) {

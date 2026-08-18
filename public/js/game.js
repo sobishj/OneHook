@@ -393,7 +393,7 @@ class GameEngine {
     // Update Fish
     for (let i = this.fishList.length - 1; i >= 0; i--) {
       const fish = this.fishList[i];
-      fish.update(dt, this.width, this.height);
+      fish.update(dt, this.width, this.height, this);
 
       if (fish.isOffscreen(this.width) && !fish.isCaught) {
         this.fishList.splice(i, 1);
