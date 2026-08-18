@@ -50,38 +50,64 @@ class Fish {
     this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
   }
 
+  scare(scareX, canvasHeight) {
+    this.isScared = true;
+    this.scareTimer = 60 + Math.random() * 60; // Panic for 1-2 seconds
+
+    // 50% chance to turn away if swimming towards the hook
+    const movingTowardsScare = (this.direction === 1 && scareX > this.x) || (this.direction === -1 && scareX < this.x);
+    if (movingTowardsScare && Math.random() > 0.5) {
+      this.isTurning = true;
+      this.turnProgress = 0;
+      this.targetDirection = -this.direction;
+    }
+    
+    // Dive or surface randomly in panic
+    const depthDelta = (Math.random() > 0.5 ? 80 : -80);
+    this.targetY = Math.min(canvasHeight * 0.80, Math.max(canvasHeight * 0.20, this.y + depthDelta));
+  }
+
   update(dt, canvasWidth, canvasHeight) {
     if (this.isCaught) {
       this.strugglePhase += 0.4;
       return;
     }
 
-    this.swimPhase += this.swimSpeed;
+    if (this.isScared) {
+      this.scareTimer--;
+      if (this.scareTimer <= 0) {
+        this.isScared = false;
+      }
+    }
+
+    this.swimPhase += this.swimSpeed * (this.isScared ? 2 : 1);
 
     // Organic vertical sine bobbing
-    this.y += Math.sin(this.swimPhase * 0.7) * 0.35;
+    this.y += Math.sin(this.swimPhase * 0.7) * (this.isScared ? 0.8 : 0.35);
 
     // Natural smooth turn execution
     if (this.isTurning) {
-      this.turnProgress += 0.045; // ~22 frames smooth turn (~0.35s)
+      this.turnProgress += this.isScared ? 0.08 : 0.045; // ~22 frames smooth turn (~0.35s)
       
       // Cosine interpolation from current direction to new direction for 3D flip effect
       this.facingScaleX = this.direction * Math.cos(this.turnProgress * Math.PI);
       
       // Speed dips smoothly at turn apex and accelerates out
       const speedMagnitude = Math.max(0.2, Math.abs(this.facingScaleX));
-      this.vx = Math.sign(this.facingScaleX || this.targetDirection) * this.baseSpeed * speedMagnitude;
+      const currentSpeed = this.baseSpeed * (this.isScared ? 2.5 : 1);
+      this.vx = Math.sign(this.facingScaleX || this.targetDirection) * currentSpeed * speedMagnitude;
 
       if (this.turnProgress >= 1.0) {
         this.direction = this.targetDirection;
         this.facingScaleX = this.direction;
         this.isTurning = false;
         this.turnsCount++;
-        this.vx = this.direction * (this.baseSpeed + Math.random() * 0.2);
+        this.vx = this.direction * (currentSpeed + Math.random() * 0.2);
       }
     } else {
       this.facingScaleX = this.direction;
-      this.vx = this.direction * this.baseSpeed;
+      const currentSpeed = this.baseSpeed * (this.isScared ? 2.5 : 1);
+      this.vx = this.direction * currentSpeed;
 
       // Safe & Rare Turning Check: STRICTLY NEVER TURN NEAR THE CENTER TO PREVENT DODGING / CHEATING
       // Center zone [30% - 70%] is 100% turn-free!

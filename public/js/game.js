@@ -70,7 +70,7 @@ class GameEngine {
     }
     this.hook.maxDepth = this.height * 0.85;
 
-    this.initSeaweed();
+    this.initDecorations();
   }
 
   initEnvironment() {
@@ -100,19 +100,45 @@ class GameEngine {
       });
     }
 
-    this.initSeaweed();
+    this.initDecorations();
   }
 
-  initSeaweed() {
+  initDecorations() {
     this.seaweed = [];
-    const count = Math.floor(this.width / 60);
+    let count = Math.floor(this.width / 60);
     for (let i = 0; i < count; i++) {
       this.seaweed.push({
         x: i * 60 + Math.random() * 20,
         height: 80 + Math.random() * 120,
         blades: 3 + Math.floor(Math.random() * 3),
         phase: Math.random() * Math.PI * 2,
-        speed: 0.02 + Math.random() * 0.02
+        speed: 0.02 + Math.random() * 0.02,
+        // Vibrant neon/emerald greens
+        color: `rgba(${10 + Math.random() * 20}, ${180 + Math.random() * 60}, ${80 + Math.random() * 60}, 0.85)`
+      });
+    }
+
+    // Small static corals/plants
+    this.corals = [];
+    count = Math.floor(this.width / 150);
+    for (let i = 0; i < count; i++) {
+      this.corals.push({
+        x: Math.random() * this.width,
+        height: 25 + Math.random() * 35,
+        color: Math.random() > 0.5 ? '#f43f5e' : '#f59e0b', // vibrant red-pink or amber
+        branches: 3 + Math.floor(Math.random() * 4)
+      });
+    }
+
+    // Small floor creatures
+    this.floorCreatures = [];
+    count = Math.floor(this.width / 200);
+    for (let i = 0; i < count; i++) {
+      this.floorCreatures.push({
+        type: Math.random() > 0.5 ? 'crab' : 'starfish',
+        x: Math.random() * this.width,
+        offsetY: Math.random() * 12,
+        scale: 0.6 + Math.random() * 0.4
       });
     }
   }
@@ -442,6 +468,13 @@ class GameEngine {
 
             // Spawn catch splash bubbles
             this.spawnCatchParticles(h.x, h.y);
+
+            // Scare the other fish!
+            for (const otherFish of this.fishList) {
+              if (!otherFish.isCaught) {
+                otherFish.scare(h.x, this.height);
+              }
+            }
             break;
           }
         }
@@ -700,11 +733,59 @@ class GameEngine {
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Seaweed waving
+    // Draw static vibrant corals
+    for (const coral of this.corals) {
+      this.ctx.strokeStyle = coral.color;
+      this.ctx.lineWidth = 4;
+      this.ctx.lineCap = 'round';
+      const baseY = this.height - 20;
+      
+      this.ctx.beginPath();
+      for (let b = 0; b < coral.branches; b++) {
+        this.ctx.moveTo(coral.x, baseY);
+        const angle = -Math.PI / 2 + (Math.random() * 1.2 - 0.6);
+        const len = coral.height * (0.5 + Math.random() * 0.5);
+        this.ctx.lineTo(coral.x + Math.cos(angle) * len, baseY + Math.sin(angle) * len);
+      }
+      this.ctx.stroke();
+    }
+
+    // Draw small sea creatures
+    for (const fc of this.floorCreatures) {
+      const y = this.height - 18 + fc.offsetY;
+      this.ctx.save();
+      this.ctx.translate(fc.x, y);
+      this.ctx.scale(fc.scale, fc.scale);
+
+      if (fc.type === 'crab') {
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, -5, 8, 5, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        // Crab eyes
+        this.ctx.fillStyle = 'white';
+        this.ctx.beginPath(); this.ctx.arc(-3, -10, 2, 0, Math.PI*2); this.ctx.fill();
+        this.ctx.beginPath(); this.ctx.arc(3, -10, 2, 0, Math.PI*2); this.ctx.fill();
+      } else {
+        // Starfish
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        for (let j = 0; j < 5; j++) {
+          const a = (j * 4 * Math.PI) / 5 - Math.PI / 2;
+          const r = j % 2 === 0 ? 8 : 3;
+          this.ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+      this.ctx.restore();
+    }
+
+    // Seaweed waving (Vibrant Green)
     const time = Date.now() * 0.002;
     for (const sw of this.seaweed) {
       const wave = Math.sin(time + sw.phase) * 15;
-      this.ctx.strokeStyle = '#005f73';
+      this.ctx.strokeStyle = sw.color || '#10b981';
       this.ctx.lineWidth = 6;
       this.ctx.lineCap = 'round';
 
