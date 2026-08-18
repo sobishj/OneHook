@@ -719,8 +719,8 @@ class GameEngine {
   drawSeabed() {
     this.ctx.save();
 
-    // Ocean floor ground silhouette
-    this.ctx.fillStyle = '#010a14';
+    // Ocean floor ground silhouette (Natural Sand)
+    this.ctx.fillStyle = '#dcb879';
     this.ctx.beginPath();
     this.ctx.moveTo(0, this.height);
     for (let x = 0; x <= this.width; x += 40) {
