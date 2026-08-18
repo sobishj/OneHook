@@ -1,0 +1,36 @@
+{
+  "name": "Sprint Games",
+  "short_name": "Sprint Games",
+  "description": "Discover and play arcade browser games. Drop the hook, catch fish, and beat high scores in SprintGames!",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0284c7",
+  "background_color": "#f0f9ff",
+  "categories": [
+    "games",
+    "arcade",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

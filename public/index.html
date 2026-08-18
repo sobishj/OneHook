@@ -4,7 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SprintGames - Arcade Game Hub</title>
-  <meta name="description" content="Discover and play arcade browser games. Drop the hook, catch the fish, and beat high scores in One Hook!">
+  <meta name="description" content="Discover and play arcade browser games. Drop the hook, catch the fish, and beat high scores in SprintGames!">
+
+  <!-- PWA & Mobile Metadata -->
+  <meta name="theme-color" content="#0284c7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sprint Games">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -274,6 +285,19 @@
       window.game = new GameEngine(canvas);
       window.game.run();
     });
+
+    // Safe PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('[PWA] Service Worker registered with scope:', registration.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] Service Worker registration failed (non-fatal):', err);
+          });
+      });
+    }
   </script>
 </body>
 </html>
