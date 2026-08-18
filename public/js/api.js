@@ -51,6 +51,13 @@ class ApiClient {
     });
   }
 
+  async login(identifier) {
+    return this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ identifier })
+    });
+  }
+
   async verify(email, code) {
     const res = await this.request('/api/auth/verify', {
       method: 'POST',

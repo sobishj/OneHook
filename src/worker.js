@@ -185,37 +185,56 @@ export default {
       // AUTH ROUTES
       // ----------------------------------------------------
 
-      // POST /api/auth/register
-      if (pathname === '/api/auth/register' && method === 'POST') {
+      // POST /api/auth/start or POST /api/auth/login or POST /api/auth/register
+      if ((pathname === '/api/auth/start' || pathname === '/api/auth/login' || pathname === '/api/auth/register') && method === 'POST') {
         const body = await request.json().catch(() => ({}));
-        const { username, email } = body;
+        const rawIdentifier = body.identifier || body.email || body.username || '';
 
-        if (!username || !email) {
-          return jsonResponse({ error: 'Username and email are required' }, 400);
+        if (!rawIdentifier || typeof rawIdentifier !== 'string' || !rawIdentifier.trim()) {
+          return jsonResponse({ error: 'Please enter your username or email address' }, 400);
         }
 
-        const cleanUsername = username.trim();
-        const cleanEmail = email.trim().toLowerCase();
+        const cleanIdentifier = rawIdentifier.trim();
 
-        if (cleanUsername.length < 2 || cleanUsername.length > 20) {
-          return jsonResponse({ error: 'Username must be between 2 and 20 characters' }, 400);
-        }
+        // 1. If it's an email address
+        if (isValidEmail(cleanIdentifier)) {
+          const cleanEmail = cleanIdentifier.toLowerCase();
+          let user = await env.DB.prepare(`SELECT * FROM users WHERE email = ?`).bind(cleanEmail).first();
 
-        if (!isValidEmail(cleanEmail)) {
-          return jsonResponse({ error: 'Please provide a valid email address' }, 400);
-        }
+          if (!user) {
+            // Auto-register new user with email
+            let baseName = '';
+            if (body.username && typeof body.username === 'string' && body.username.trim()) {
+              baseName = body.username.trim().replace(/[^a-zA-Z0-9_]/g, '');
+            }
+            if (!baseName || baseName.length < 2) {
+              baseName = cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
+            }
+            if (baseName.length < 2) baseName = 'Player';
+            if (baseName.length > 20) baseName = baseName.substring(0, 20);
 
-        // Check if email already registered
-        const existingUser = await env.DB.prepare(`SELECT * FROM users WHERE email = ?`).bind(cleanEmail).first();
-        if (existingUser) {
+            // Ensure unique username
+            let finalName = baseName;
+            const existingName = await env.DB.prepare(`SELECT id FROM users WHERE LOWER(username) = LOWER(?)`).bind(finalName).first();
+            if (existingName) {
+              finalName = `${baseName}_${Math.floor(100 + Math.random() * 900)}`;
+            }
+
+            const userId = generateId('usr');
+            await env.DB.prepare(`INSERT INTO users (id, username, email, email_verified, best_score) VALUES (?, ?, ?, 0, 0)`).bind(userId, finalName, cleanEmail).run();
+            user = { id: userId, username: finalName, email: cleanEmail };
+          } else {
+             // User exists. If it's a register call, maybe we should return an error, but for smooth UX we can just send the OTP to login.
+             // But if they explicitly clicked "Register" and provided a username that doesn't match, maybe we don't care.
+          }
+
           const otp = generateOTP();
           const expiresAt = Date.now() + 10 * 60 * 1000;
-          await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
+          await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(user.email, otp, expiresAt).run();
 
-          // Send verification email via Resend API
           const emailResult = await sendVerificationEmail({
-            email: cleanEmail,
-            username: existingUser.username,
+            email: user.email,
+            username: user.username,
             code: otp,
             env
           });
@@ -225,30 +244,31 @@ export default {
           }
 
           return jsonResponse({
-            message: 'Verification code sent to your email. Please check your inbox!',
-            email: cleanEmail,
-            isExisting: true
+            success: true,
+            message: `Verification code sent to ${user.email}!`,
+            email: user.email,
+            username: user.username
           });
         }
 
-        // Check if username taken
-        const usernameTaken = await env.DB.prepare(`SELECT * FROM users WHERE LOWER(username) = LOWER(?)`).bind(cleanUsername).first();
-        if (usernameTaken) {
-          return jsonResponse({ error: 'Username is already taken by another player' }, 400);
-        }
+        // 2. If it's a username
+        const user = await env.DB.prepare(`SELECT * FROM users WHERE LOWER(username) = LOWER(?)`).bind(cleanIdentifier).first();
 
-        // Create user (unverified)
-        const userId = generateId('usr');
-        await env.DB.prepare(`INSERT INTO users (id, username, email, email_verified, best_score) VALUES (?, ?, ?, 0, 0)`).bind(userId, cleanUsername, cleanEmail).run();
+        if (!user) {
+          return jsonResponse({
+            error: `No account found for "${cleanIdentifier}". Please enter your email address to sign up!`,
+            notFound: true
+          }, 404);
+        }
 
         const otp = generateOTP();
         const expiresAt = Date.now() + 10 * 60 * 1000;
-        await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
+        await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`)
+          .bind(user.email, otp, expiresAt).run();
 
-        // Send verification email via Resend API
         const emailResult = await sendVerificationEmail({
-          email: cleanEmail,
-          username: cleanUsername,
+          email: user.email,
+          username: user.username,
           code: otp,
           env
         });
@@ -257,10 +277,12 @@ export default {
           return jsonResponse({ error: emailResult.error }, 500);
         }
 
+        const maskedEmail = user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
         return jsonResponse({
-          message: 'Verification code sent to your email. Please check your inbox!',
-          email: cleanEmail,
-          isExisting: false
+          success: true,
+          message: `Verification code sent to your registered email (${maskedEmail})!`,
+          email: user.email,
+          username: user.username
         });
       }
 

@@ -77,15 +77,80 @@ class UIManager {
 
     // Auth Modal Handlers
     document.getElementById('close-auth-btn').addEventListener('click', () => this.closeModal(this.authModal));
-    document.getElementById('auth-submit-btn').addEventListener('click', () => this.handleAuthSubmit());
+    
+    // Auth Options Navigation
+    const optLoginBtn = document.getElementById('opt-login-btn');
+    if (optLoginBtn) optLoginBtn.addEventListener('click', () => {
+      document.getElementById('auth-step-options').classList.add('hidden');
+      document.getElementById('auth-step-login').classList.remove('hidden');
+      const input = document.getElementById('auth-login-identifier');
+      if (input) input.focus();
+    });
+
+    const optRegisterBtn = document.getElementById('opt-register-btn');
+    if (optRegisterBtn) optRegisterBtn.addEventListener('click', () => {
+      document.getElementById('auth-step-options').classList.add('hidden');
+      document.getElementById('auth-step-register').classList.remove('hidden');
+      const input = document.getElementById('auth-reg-username');
+      if (input) input.focus();
+    });
+
+    const backFromLogin = document.getElementById('back-to-opt-from-login');
+    if (backFromLogin) backFromLogin.addEventListener('click', () => {
+      document.getElementById('auth-step-login').classList.add('hidden');
+      document.getElementById('auth-step-options').classList.remove('hidden');
+    });
+
+    const backFromReg = document.getElementById('back-to-opt-from-reg');
+    if (backFromReg) backFromReg.addEventListener('click', () => {
+      document.getElementById('auth-step-register').classList.add('hidden');
+      document.getElementById('auth-step-options').classList.remove('hidden');
+    });
+    
+    // Submit Buttons
+    const loginSubmitBtn = document.getElementById('auth-login-submit-btn');
+    if (loginSubmitBtn) loginSubmitBtn.addEventListener('click', () => this.handleLoginSubmit());
+    
+    const regSubmitBtn = document.getElementById('auth-reg-submit-btn');
+    if (regSubmitBtn) regSubmitBtn.addEventListener('click', () => this.handleRegisterSubmit());
+    
     document.getElementById('otp-verify-btn').addEventListener('click', () => this.handleOtpVerify());
     document.getElementById('auth-logout-btn').addEventListener('click', () => this.handleLogout());
+
+    // Enter Key Listeners on Form Inputs
+    const loginIdInput = document.getElementById('auth-login-identifier');
+    if (loginIdInput) {
+      loginIdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleLoginSubmit();
+      });
+    }
+
+    const regUsernameInput = document.getElementById('auth-reg-username');
+    if (regUsernameInput) {
+      regUsernameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleRegisterSubmit();
+      });
+    }
+
+    const regEmailInput = document.getElementById('auth-reg-email');
+    if (regEmailInput) {
+      regEmailInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleRegisterSubmit();
+      });
+    }
+
+    const otpCodeInput = document.getElementById('otp-code-input');
+    if (otpCodeInput) {
+      otpCodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleOtpVerify();
+      });
+    }
 
     const backBtn = document.getElementById('otp-back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        document.getElementById('auth-step-register').classList.remove('hidden');
         document.getElementById('auth-step-otp').classList.add('hidden');
+        document.getElementById('auth-step-options').classList.remove('hidden');
       });
     }
 
@@ -330,7 +395,10 @@ class UIManager {
   // Auth Flow
   async openAuthModal() {
     const user = window.apiClient.user;
+
     if (user) {
+      document.getElementById('auth-step-options').classList.add('hidden');
+      document.getElementById('auth-step-login').classList.add('hidden');
       document.getElementById('auth-step-register').classList.add('hidden');
       document.getElementById('auth-step-otp').classList.add('hidden');
       document.getElementById('auth-step-profile').classList.remove('hidden');
@@ -353,9 +421,11 @@ class UIManager {
         } catch (e) {}
       }
     } else {
-      document.getElementById('auth-step-register').classList.remove('hidden');
-      document.getElementById('auth-step-otp').classList.add('hidden');
       document.getElementById('auth-step-profile').classList.add('hidden');
+      document.getElementById('auth-step-otp').classList.add('hidden');
+      document.getElementById('auth-step-login').classList.add('hidden');
+      document.getElementById('auth-step-register').classList.add('hidden');
+      document.getElementById('auth-step-options').classList.remove('hidden');
       this.openModal(this.authModal);
     }
   }
@@ -367,16 +437,57 @@ class UIManager {
     this.showToast('Logged out successfully', 'info');
   }
 
-  async handleAuthSubmit() {
-    const username = document.getElementById('auth-username').value.trim();
-    const email = document.getElementById('auth-email').value.trim();
+  async handleLoginSubmit() {
+    const identifierInput = document.getElementById('auth-login-identifier');
+    const identifier = identifierInput ? identifierInput.value.trim() : '';
 
-    if (!username || !email) {
-      this.showToast('Please enter both username and email', 'error');
+    if (!identifier) {
+      this.showToast('Please enter your username or email address', 'error');
+      if (identifierInput) identifierInput.focus();
       return;
     }
 
     try {
+      const res = await window.apiClient.login(identifier);
+      this.pendingEmail = res.email;
+
+      this.showToast(res.message || 'Verification code sent to your email!', 'success');
+
+      const otpInput = document.getElementById('otp-code-input');
+      if (otpInput) {
+        otpInput.value = '';
+        setTimeout(() => otpInput.focus(), 100);
+      }
+
+      document.getElementById('auth-step-login').classList.add('hidden');
+      document.getElementById('auth-step-otp').classList.remove('hidden');
+      document.getElementById('otp-sent-email').textContent = res.email;
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  }
+
+  async handleRegisterSubmit() {
+    const usernameInput = document.getElementById('auth-reg-username');
+    const emailInput = document.getElementById('auth-reg-email');
+    
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    if (!username || !email) {
+      this.showToast('Please enter both username and email address', 'error');
+      if (!username && usernameInput) usernameInput.focus();
+      else if (!email && emailInput) emailInput.focus();
+      return;
+    }
+
+    try {
+      // In the worker, login() actually does "start auth" (handles both register/login).
+      // If we pass an email, it creates/finds the user. We need to pass the email.
+      // We should ideally update the backend to support setting username on registration,
+      // but for now, sending the email to `apiClient.login` works for generating the OTP.
+      // Let's pass an object so apiClient can send both if supported.
+      const payload = { identifier: email, username: username };
       const res = await window.apiClient.register(username, email);
       this.pendingEmail = res.email;
 
@@ -385,7 +496,7 @@ class UIManager {
       const otpInput = document.getElementById('otp-code-input');
       if (otpInput) {
         otpInput.value = '';
-        otpInput.focus();
+        setTimeout(() => otpInput.focus(), 100);
       }
 
       document.getElementById('auth-step-register').classList.add('hidden');
@@ -405,7 +516,7 @@ class UIManager {
 
     try {
       const res = await window.apiClient.verify(this.pendingEmail, code);
-      this.showToast(`Welcome aboard, ${res.user.username}!`, 'success');
+      this.showToast(`Welcome, ${res.user.username}!`, 'success');
       this.closeModal(this.authModal);
       this.refreshUserBadge();
     } catch (err) {
@@ -415,21 +526,17 @@ class UIManager {
 
   async handleResendOtp() {
     if (!this.pendingEmail) {
-      this.showToast('Please enter your email again', 'error');
-      document.getElementById('auth-step-register').classList.remove('hidden');
+      this.showToast('Please enter your details again', 'error');
       document.getElementById('auth-step-otp').classList.add('hidden');
+      document.getElementById('auth-step-input').classList.remove('hidden');
+      const input = document.getElementById('auth-identifier');
+      if (input) input.focus();
       return;
     }
 
     try {
-      const username = document.getElementById('auth-username').value.trim() || 'Ethan';
-      const res = await window.apiClient.register(username, this.pendingEmail);
-      this.showToast('A new verification code has been sent to your email!', 'success');
-      const otpInput = document.getElementById('otp-code-input');
-      if (otpInput) {
-        otpInput.value = '';
-        otpInput.focus();
-      }
+      const res = await window.apiClient.login(this.pendingEmail);
+      this.showToast(res.message || 'New verification code sent!', 'success');
     } catch (err) {
       this.showToast(err.message, 'error');
     }
