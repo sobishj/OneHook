@@ -1215,6 +1215,32 @@ html, body {
     font-size: 1.5rem;
   }
 
+  /* Navigation Header - moved from 480px to apply to all tablets/phones */
+  .portal-navbar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .portal-nav-brand {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .portal-nav-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .btn-nav-item {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
   /* Modals */
   .modal-card {
     padding: 24px 20px;
@@ -1231,25 +1257,14 @@ html, body {
     font-size: 1.4rem;
   }
 
-  /* Navigation Header */
+  /* Navigation Header (Extra small) */
   .portal-navbar {
     padding: 10px 12px;
-    flex-wrap: wrap;
-    justify-content: center;
     gap: 8px;
   }
   
-  .portal-nav-brand {
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 4px;
-  }
-
   .portal-nav-actions {
-    flex-wrap: wrap;
-    justify-content: center;
     gap: 6px;
-    width: 100%;
   }
 
   .btn-nav-item {
