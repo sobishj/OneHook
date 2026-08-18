@@ -87,18 +87,7 @@ class GameEngine {
       });
     }
 
-    // Ambient bubbles
-    this.bubbles = [];
-    for (let i = 0; i < 25; i++) {
-      this.bubbles.push({
-        x: Math.random() * this.width,
-        y: Math.random() * this.height,
-        radius: 1.5 + Math.random() * 3.5,
-        speed: 0.4 + Math.random() * 0.8,
-        wobble: Math.random() * Math.PI * 2,
-        alpha: 0.2 + Math.random() * 0.4
-      });
-    }
+    this.bubbles = []; // Only empty array, populated later by fish
 
     this.initDecorations();
   }
@@ -376,13 +365,13 @@ class GameEngine {
     if (this.state !== 'PLAYING' && this.state !== 'MENU') return;
 
     // Update Bubbles
-    for (const b of this.bubbles) {
+    for (let i = this.bubbles.length - 1; i >= 0; i--) {
+      const b = this.bubbles[i];
       b.y -= b.speed;
       b.wobble += 0.05;
       b.x += Math.sin(b.wobble) * 0.4;
       if (b.y < -10) {
-        b.y = this.height + 10;
-        b.x = Math.random() * this.width;
+        this.bubbles.splice(i, 1);
       }
     }
 
