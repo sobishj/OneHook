@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>One Hook Arcade - Game Hub</title>
+  <title>SprintGames - Arcade Game Hub</title>
   <meta name="description" content="Discover and play arcade browser games. Drop the hook, catch the fish, and beat high scores in One Hook!">
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,8 +25,8 @@
     <!-- Main Portal Navigation Header -->
     <header id="portal-nav" class="portal-navbar">
       <div class="portal-nav-brand" id="nav-brand-logo">
-        <span class="portal-logo-icon">🪝</span>
-        <span class="portal-logo-title">ONE HOOK <small>ARCADE</small></span>
+        <span class="portal-logo-icon">🎮</span>
+        <span class="portal-logo-title">SPRINT<small>GAMES</small></span>
       </div>
 
       <div class="portal-nav-actions">
@@ -40,29 +40,35 @@
     <!-- In-Game HUD Header -->
     <header id="hud-screen" class="hidden">
       <div class="hud-bar">
-        <div class="hud-stat">
-          <span class="hud-label">BEST</span>
-          <span id="hud-best" class="hud-value">0</span>
-        </div>
-
-        <div class="hud-stat hud-score-box">
-          <span class="hud-label">SCORE</span>
-          <span id="hud-score" class="hud-value highlight">0</span>
-        </div>
-
-        <div class="hud-stat">
-          <span class="hud-label">ATTEMPTS PENDING</span>
-          <div class="hud-attempts-box">
-            <span id="hud-hearts" class="hud-hearts">❤️ ❤️ ❤️</span>
-            <span id="hud-attempts-count" class="hud-attempts-num">(3/3)</span>
+        <!-- Left Side: Hub Button & Best Score -->
+        <div class="hud-side-group">
+          <button id="exit-to-hub-btn" class="hud-btn-text" title="Back to Game Hub">🏠 HUB</button>
+          <div class="hud-stat">
+            <span class="hud-label">BEST</span>
+            <span id="hud-best" class="hud-value">0</span>
           </div>
         </div>
-      </div>
 
-      <div class="hud-subbar">
-        <button id="exit-to-hub-btn" class="hud-btn-text">🏠 HUB</button>
-        <span id="hud-level" class="hud-badge">LEVEL 1: Small Fish</span>
-        <button id="audio-toggle-btn" class="hud-btn" title="Toggle Sound">🔊</button>
+        <!-- Center: Current Score & Level Badge -->
+        <div class="hud-center-group">
+          <span id="hud-level" class="hud-level-badge">LEVEL 1</span>
+          <div class="hud-stat hud-score-box">
+            <span class="hud-label">SCORE</span>
+            <span id="hud-score" class="hud-value highlight">0</span>
+          </div>
+        </div>
+
+        <!-- Right Side: Lives / Attempts & Audio Button -->
+        <div class="hud-side-group">
+          <div class="hud-stat">
+            <span class="hud-label">ATTEMPTS</span>
+            <div class="hud-attempts-box">
+              <span id="hud-hearts" class="hud-hearts">❤️ ❤️ ❤️</span>
+              <span id="hud-attempts-count" class="hud-attempts-num">(3/3)</span>
+            </div>
+          </div>
+          <button id="audio-toggle-btn" class="hud-btn" title="Toggle Sound">🔊</button>
+        </div>
       </div>
 
       <!-- Challenge HUD Notice Banner -->
@@ -95,17 +101,17 @@
         
         <!-- Registration Form -->
         <div id="auth-step-register">
-          <h2>🎣 Join One Hook Arcade</h2>
-          <p class="modal-desc">Create your angler profile to save scores, add friends, and compete!</p>
+          <h2>🎮 Join SprintGames</h2>
+          <p class="modal-desc">Create your profile to save scores, add friends, and compete!</p>
 
           <div class="form-group">
             <label for="auth-username">USERNAME</label>
-            <input type="text" id="auth-username" placeholder="e.g. Sobish" maxlength="20" autocomplete="off">
+            <input type="text" id="auth-username" placeholder="e.g. Ethan" maxlength="20" autocomplete="off">
           </div>
 
           <div class="form-group">
             <label for="auth-email">EMAIL ADDRESS</label>
-            <input type="email" id="auth-email" placeholder="e.g. angler@example.com" autocomplete="off">
+            <input type="email" id="auth-email" placeholder="e.g. ethan@example.com" autocomplete="off">
           </div>
 
           <button id="auth-submit-btn" class="btn btn-primary btn-full">CONTINUE</button>
@@ -114,7 +120,7 @@
         <!-- Verification Form -->
         <div id="auth-step-otp" class="hidden">
           <h2>✉️ Verify Email</h2>
-          <p class="modal-desc">Enter the 6-digit verification code sent to <strong id="otp-sent-email">email@example.com</strong></p>
+          <p class="modal-desc">Enter the 6-digit verification code sent to <strong id="otp-sent-email">ethan@example.com</strong></p>
 
           <div class="form-group">
             <label for="otp-code-input">VERIFICATION CODE</label>
@@ -131,11 +137,11 @@
 
         <!-- Signed-in Profile View -->
         <div id="auth-step-profile" class="hidden">
-          <h2>👤 Angler Profile</h2>
+          <h2>👤 Player Profile</h2>
           <div class="target-score-card" style="margin-top: 14px; margin-bottom: 14px;">
             <span class="lbl">LOGGED IN AS</span>
-            <span id="profile-username-display" class="val" style="font-size: 1.5rem; color: #fff;">Angler</span>
-            <span id="profile-email-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">email@example.com</span>
+            <span id="profile-username-display" class="val" style="font-size: 1.5rem; color: #fff;">Ethan</span>
+            <span id="profile-email-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">ethan@example.com</span>
           </div>
           <div class="score-box" style="margin-bottom: 20px; align-items: center;">
             <span class="lbl">PERSONAL BEST</span>
@@ -238,7 +244,7 @@
         </div>
 
         <div id="go-level-reached" class="level-reached-badge">
-          LEVEL 1: SMALL FISH
+          LEVEL 1
         </div>
 
         <div class="gameover-actions">

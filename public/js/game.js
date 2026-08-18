@@ -14,13 +14,13 @@ class GameEngine {
     this.bestScore = 0;
     this.lives = 3;
     this.level = 1;
-    this.levelName = 'Small Fish';
+    this.levelName = 'LEVEL 1';
 
     // Hook state
     this.hook = {
       x: this.width / 2,
-      y: 60,
-      startY: 60,
+      y: 95,
+      startY: 95,
       maxDepth: this.height * 0.85,
       speed: 12,
       reelSpeed: 16,
@@ -41,8 +41,8 @@ class GameEngine {
     this.startTime = 0;
     this.catchesLog = [];
 
-    // Level up notification banner
-    this.levelUpBanner = null;
+    // Small level up bubble (non-blocking)
+    this.levelBubble = null;
 
     // Active Challenge Mode context
     this.activeChallenge = null;
@@ -64,6 +64,10 @@ class GameEngine {
     this.ctx.scale(this.dpr, this.dpr);
 
     this.hook.x = this.width / 2;
+    this.hook.startY = 95;
+    if (this.hook.state === 'IDLE') {
+      this.hook.y = 95;
+    }
     this.hook.maxDepth = this.height * 0.85;
 
     this.initSeaweed();
@@ -200,7 +204,7 @@ class GameEngine {
     this.score = 0;
     this.lives = 3;
     this.level = 1;
-    this.levelName = 'Small Fish';
+    this.levelName = 'LEVEL 1';
     this.fishList = [];
     this.catchesLog = [];
     this.startTime = Date.now();
@@ -268,6 +272,7 @@ class GameEngine {
 
     const fish = new Fish({
       ...config,
+      level: this.level,
       canvasWidth: this.width,
       canvasHeight: this.height
     });
@@ -277,33 +282,38 @@ class GameEngine {
 
   checkLevelUp() {
     let newLevel = 1;
-    let name = 'Small Fish';
 
     if (this.score >= 500) {
       newLevel = 5;
-      name = 'Bioluminescent Abyss';
     } else if (this.score >= 300) {
       newLevel = 4;
-      name = 'Shark Waters';
     } else if (this.score >= 150) {
       newLevel = 3;
-      name = 'Large Sea Creatures';
     } else if (this.score >= 50) {
       newLevel = 2;
-      name = 'Medium Fish';
     }
 
     if (newLevel > this.level) {
       this.level = newLevel;
-      this.levelName = name;
+      this.levelName = `LEVEL ${this.level}`;
       this.maxFishCount = 6 + (this.level - 1);
       window.soundManager.playLevelUp();
 
-      // Show level up banner
-      this.levelUpBanner = {
+      // Dynamically accelerate existing swimming fish
+      for (const f of this.fishList) {
+        if (f.updateLevel) {
+          f.updateLevel(this.level);
+        }
+      }
+
+      // Small, transparent bubble placed off to the side away from the hook & fish
+      const sideX = Math.random() > 0.5 ? this.width * 0.15 : this.width * 0.85;
+      this.levelBubble = {
+        x: Math.max(45, Math.min(this.width - 45, sideX)),
+        y: 190,
+        radius: 24,
         level: this.level,
-        name: this.levelName,
-        timer: 120 // 2 seconds at 60fps
+        timer: 45 // Fast ~0.75s lifetime before popping
       };
 
       this.updateHUD();
@@ -373,11 +383,13 @@ class GameEngine {
       }
     }
 
-    // Level up banner timer
-    if (this.levelUpBanner) {
-      this.levelUpBanner.timer--;
-      if (this.levelUpBanner.timer <= 0) {
-        this.levelUpBanner = null;
+    // Small level bubble float & quick pop
+    if (this.levelBubble) {
+      this.levelBubble.y -= 1.2;
+      this.levelBubble.timer--;
+      if (this.levelBubble.timer <= 0) {
+        this.spawnBubblePop(this.levelBubble.x, this.levelBubble.y);
+        this.levelBubble = null;
       }
     }
   }
@@ -494,6 +506,20 @@ class GameEngine {
     }
   }
 
+  spawnBubblePop(x, y) {
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 2.5;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 1.5 + Math.random() * 2,
+        alpha: 0.8
+      });
+    }
+  }
+
   async handleGameOver() {
     this.state = 'GAMEOVER';
     window.soundManager.playGameOver();
@@ -565,9 +591,9 @@ class GameEngine {
     // 7. Draw Floating Score Text
     this.drawFloatingTexts();
 
-    // 8. Draw Level Up Notification Overlay
-    if (this.levelUpBanner) {
-      this.drawLevelUpBanner();
+    // 8. Draw Small Transparent Level Bubble (Off to side in water)
+    if (this.levelBubble) {
+      this.drawLevelBubble();
     }
   }
 
@@ -669,7 +695,7 @@ class GameEngine {
     this.ctx.save();
 
     // Fishing line
-    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.moveTo(this.hook.x, 0);
@@ -680,29 +706,33 @@ class GameEngine {
     const hx = this.hook.x;
     const hy = this.hook.y;
 
-    this.ctx.strokeStyle = '#e0e0e0';
-    this.ctx.lineWidth = 4;
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    this.ctx.shadowBlur = 6;
+    this.ctx.strokeStyle = '#f0f4f8';
+    this.ctx.lineWidth = 4.5;
     this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
 
     // Hook Eyelet
     this.ctx.beginPath();
-    this.ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+    this.ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
     this.ctx.stroke();
 
     // Hook Shank & Curve
     this.ctx.beginPath();
     this.ctx.moveTo(hx, hy + 4);
-    this.ctx.lineTo(hx, hy + 22);
-    this.ctx.arc(hx - 8, hy + 22, 8, 0, Math.PI);
-    this.ctx.lineTo(hx - 16, hy + 14);
+    this.ctx.lineTo(hx, hy + 24);
+    this.ctx.arc(hx - 9, hy + 24, 9, 0, Math.PI);
+    this.ctx.lineTo(hx - 18, hy + 15);
     this.ctx.stroke();
 
     // Barb tip
     this.ctx.fillStyle = '#ffffff';
     this.ctx.beginPath();
-    this.ctx.moveTo(hx - 16, hy + 14);
-    this.ctx.lineTo(hx - 20, hy + 16);
-    this.ctx.lineTo(hx - 14, hy + 18);
+    this.ctx.moveTo(hx - 18, hy + 15);
+    this.ctx.lineTo(hx - 23, hy + 18);
+    this.ctx.lineTo(hx - 16, hy + 20);
+    this.ctx.closePath();
     this.ctx.fill();
 
     this.ctx.restore();
@@ -741,28 +771,44 @@ class GameEngine {
     this.ctx.restore();
   }
 
-  drawLevelUpBanner() {
-    if (!this.levelUpBanner) return;
+  drawLevelBubble() {
+    if (!this.levelBubble) return;
+
+    const b = this.levelBubble;
+    const alpha = Math.min(1, b.timer / 12);
 
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(0, 15, 30, 0.85)';
-    this.ctx.fillRect(0, this.height * 0.38, this.width, 110);
+    this.ctx.globalAlpha = alpha;
 
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(0, this.height * 0.38, this.width, 110);
+    // Small, elegant glass-like aquatic bubble
+    const grad = this.ctx.createRadialGradient(b.x - 5, b.y - 5, 2, b.x, b.y, b.radius);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+    grad.addColorStop(0.6, 'rgba(0, 240, 255, 0.12)');
+    grad.addColorStop(1, 'rgba(0, 200, 255, 0.3)');
 
+    this.ctx.fillStyle = grad;
+    this.ctx.beginPath();
+    this.ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.strokeStyle = 'rgba(180, 245, 255, 0.65)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.stroke();
+
+    // Specular shine
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    this.ctx.beginPath();
+    this.ctx.arc(b.x - 7, b.y - 7, 3.5, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Small clean text inside bubble
     this.ctx.textAlign = 'center';
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 12;
-
-    this.ctx.fillStyle = '#ffea00';
-    this.ctx.font = '900 28px "Outfit", sans-serif';
-    this.ctx.fillText('LEVEL UP!', this.width / 2, this.height * 0.44);
-
+    this.ctx.textBaseline = 'middle';
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '600 20px "Outfit", sans-serif';
-    this.ctx.fillText(`🌊 LEVEL ${this.levelUpBanner.level}: ${this.levelUpBanner.name.toUpperCase()} 🌊`, this.width / 2, this.height * 0.49);
+    this.ctx.font = '800 11px "Outfit", sans-serif';
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.shadowBlur = 3;
+    this.ctx.fillText(`LVL ${b.level}`, b.x, b.y + 1);
 
     this.ctx.restore();
   }

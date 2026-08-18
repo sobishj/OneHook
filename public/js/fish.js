@@ -9,26 +9,39 @@ class Fish {
     this.color1 = config.color1 || '#ff7700';
     this.color2 = config.color2 || '#ffffff';
     this.color3 = config.color3 || '#333333';
-    this.baseSpeed = config.speed || 2;
+    this.rawSpeed = config.speed || 1.4;
+    this.level = config.level || 1;
     this.isErratic = config.isErratic || false;
+
+    // Speed scales dynamically with level: gentle at level 1, increasing with each level
+    const levelScale = 1 + (this.level - 1) * 0.35;
+    this.baseSpeed = this.rawSpeed * levelScale;
 
     // Spatial properties
     this.direction = Math.random() > 0.5 ? 1 : -1; // 1 = right, -1 = left
     this.x = this.direction === 1 ? -this.width - 20 : config.canvasWidth + this.width + 20;
-    this.y = config.y || Math.random() * (config.canvasHeight * 0.7) + (config.canvasHeight * 0.2);
+    this.y = config.y || Math.random() * (config.canvasHeight * 0.65) + (config.canvasHeight * 0.22);
     this.targetY = this.y;
 
-    this.vx = this.direction * (this.baseSpeed + Math.random() * 0.5);
+    this.vx = this.direction * (this.baseSpeed + Math.random() * 0.3);
     this.vy = 0;
 
     this.swimPhase = Math.random() * Math.PI * 2;
-    this.swimSpeed = 0.15 + (this.baseSpeed * 0.02);
+    this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
 
     this.isCaught = false;
     this.strugglePhase = 0;
 
     // Direction shift timer for sharks & erratic fish
     this.nextTurnTime = Date.now() + 2000 + Math.random() * 3000;
+  }
+
+  updateLevel(newLevel) {
+    this.level = newLevel;
+    const levelScale = 1 + (this.level - 1) * 0.35;
+    this.baseSpeed = this.rawSpeed * levelScale;
+    this.vx = this.direction * (this.baseSpeed + Math.random() * 0.3);
+    this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
   }
 
   update(dt, canvasWidth, canvasHeight) {
@@ -557,27 +570,27 @@ class Fish {
 
 // Fish Factory Configs for Stages 1-5
 const FISH_SPECIES_CONFIGS = {
-  // Stage 1
-  clownfish: { species: 'clownfish', stage: 1, points: 2, width: 44, height: 26, speed: 2.2 },
-  blue_tang: { species: 'blue_tang', stage: 1, points: 3, width: 48, height: 28, speed: 2.6 },
-  yellow_sailfin: { species: 'yellow_sailfin', stage: 1, points: 3, width: 46, height: 32, speed: 2.4 },
+  // Stage 1 (Smooth & Gentle starting speeds)
+  clownfish: { species: 'clownfish', stage: 1, points: 2, width: 44, height: 26, speed: 1.3 },
+  blue_tang: { species: 'blue_tang', stage: 1, points: 3, width: 48, height: 28, speed: 1.5 },
+  yellow_sailfin: { species: 'yellow_sailfin', stage: 1, points: 3, width: 46, height: 32, speed: 1.4 },
 
   // Stage 2
-  angelfish: { species: 'angelfish', stage: 2, points: 5, width: 56, height: 42, speed: 3.2 },
-  red_snapper: { species: 'red_snapper', stage: 2, points: 7, width: 62, height: 34, speed: 3.6 },
-  barracuda: { species: 'barracuda', stage: 2, points: 10, width: 75, height: 26, speed: 4.2 },
+  angelfish: { species: 'angelfish', stage: 2, points: 5, width: 56, height: 42, speed: 1.8 },
+  red_snapper: { species: 'red_snapper', stage: 2, points: 7, width: 62, height: 34, speed: 2.1 },
+  barracuda: { species: 'barracuda', stage: 2, points: 10, width: 75, height: 26, speed: 2.5 },
 
   // Stage 3
-  swordfish: { species: 'swordfish', stage: 3, points: 18, width: 95, height: 36, speed: 4.8 },
-  manta_ray: { species: 'manta_ray', stage: 3, points: 20, width: 90, height: 45, speed: 2.8 },
+  swordfish: { species: 'swordfish', stage: 3, points: 18, width: 95, height: 36, speed: 2.9 },
+  manta_ray: { species: 'manta_ray', stage: 3, points: 20, width: 90, height: 45, speed: 1.9 },
 
   // Stage 4
-  shark: { species: 'shark', stage: 4, points: 50, width: 115, height: 48, speed: 5.8, isErratic: true },
+  shark: { species: 'shark', stage: 4, points: 50, width: 115, height: 48, speed: 3.4, isErratic: true },
 
   // Stage 5
-  golden_fish: { species: 'golden_fish', stage: 5, points: 75, width: 65, height: 35, speed: 6.2 },
-  jellyfish: { species: 'jellyfish', stage: 5, points: 60, width: 55, height: 60, speed: 1.8 },
-  whale: { species: 'whale', stage: 5, points: 100, width: 150, height: 75, speed: 2.2 }
+  golden_fish: { species: 'golden_fish', stage: 5, points: 75, width: 65, height: 35, speed: 3.8 },
+  jellyfish: { species: 'jellyfish', stage: 5, points: 60, width: 55, height: 60, speed: 1.4 },
+  whale: { species: 'whale', stage: 5, points: 100, width: 150, height: 75, speed: 1.6 }
 };
 
 window.Fish = Fish;

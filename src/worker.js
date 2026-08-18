@@ -119,20 +119,20 @@ async function sendVerificationEmail({ email, username, code, env }) {
     };
   }
 
-  const subject = 'OneHook Arcade - Your Verification Code';
-  const fromEmail = 'OneHook Arcade <onboarding@resend.dev>';
+  const subject = 'SprintGames - Your Verification Code';
+  const fromEmail = (env.EMAIL_FROM && env.EMAIL_FROM.trim()) || 'SprintGames <onboarding@resend.dev>';
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 12px; border: 1px solid #334155;">
-      <h2 style="color: #38bdf8; text-align: center; margin-top: 0; font-size: 24px;">🎣 OneHook Arcade</h2>
-      <p style="font-size: 16px; color: #e2e8f0;">Ahoy <strong>${username || 'Angler'}</strong>,</p>
-      <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5;">Use the following 6-digit verification code to complete your registration on OneHook:</p>
+      <h2 style="color: #38bdf8; text-align: center; margin-top: 0; font-size: 24px;">🎮 SprintGames</h2>
+      <p style="font-size: 16px; color: #e2e8f0;">Hello <strong>${username || 'Player'}</strong>,</p>
+      <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5;">Use the following 6-digit verification code to complete your registration on SprintGames:</p>
       <div style="text-align: center; margin: 28px 0;">
         <span style="display: inline-block; font-size: 34px; font-weight: 800; letter-spacing: 8px; padding: 14px 28px; background: #1e293b; color: #fbbf24; border-radius: 10px; border: 2px dashed #f59e0b; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">${code}</span>
       </div>
       <p style="color: #94a3b8; font-size: 13px; line-height: 1.4; border-top: 1px solid #334155; padding-top: 16px;">This code will expire in <strong>10 minutes</strong>. If you did not request this verification code, you can safely ignore this message.</p>
     </div>
   `;
-  const text = `Ahoy ${username || 'Angler'},\n\nYour OneHook verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Fishing!`;
+  const text = `Hello ${username || 'Player'},\n\nYour SprintGames verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Gaming!`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -234,7 +234,7 @@ export default {
         // Check if username taken
         const usernameTaken = await env.DB.prepare(`SELECT * FROM users WHERE LOWER(username) = LOWER(?)`).bind(cleanUsername).first();
         if (usernameTaken) {
-          return jsonResponse({ error: 'Username is already taken by another angler' }, 400);
+          return jsonResponse({ error: 'Username is already taken by another player' }, 400);
         }
 
         // Create user (unverified)

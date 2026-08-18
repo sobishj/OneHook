@@ -70,7 +70,6 @@ class UIManager {
       const icon = isMuted ? '🔇' : '🔊';
       if (this.audioBtn) this.audioBtn.innerHTML = icon;
       if (this.audioNavBtn) this.audioNavBtn.innerHTML = icon;
-      this.showToast(isMuted ? 'Audio Muted' : 'Audio Unmuted', 'info');
     };
 
     if (this.audioBtn) this.audioBtn.addEventListener('click', handleAudioToggle);
@@ -176,7 +175,7 @@ class UIManager {
         window.game.startNewGame(challengeContext);
       }
     } else {
-      this.showToast('🎮 Game coming soon to One Hook Arcade!', 'info');
+      this.showToast('🎮 Game coming soon to SprintGames!', 'info');
     }
   }
 
@@ -260,7 +259,7 @@ class UIManager {
   updateHUD(data) {
     this.hudBest.textContent = data.bestScore.toLocaleString();
     this.hudScore.textContent = data.score.toLocaleString();
-    this.hudLevel.textContent = `LEVEL ${data.level}: ${data.levelName}`;
+    this.hudLevel.textContent = `LEVEL ${data.level}`;
 
     let heartsHtml = '';
     for (let i = 0; i < 3; i++) {
@@ -374,7 +373,7 @@ class UIManager {
     }
 
     try {
-      const username = document.getElementById('auth-username').value.trim() || 'Angler';
+      const username = document.getElementById('auth-username').value.trim() || 'Ethan';
       const res = await window.apiClient.register(username, this.pendingEmail);
       this.showToast('A new verification code has been sent to your email!', 'success');
       const otpInput = document.getElementById('otp-code-input');
@@ -415,7 +414,7 @@ class UIManager {
         <thead>
           <tr>
             <th>RANK</th>
-            <th>ANGLER</th>
+            <th>PLAYER</th>
             <th>BEST SCORE</th>
           </tr>
         </thead>
@@ -456,7 +455,7 @@ class UIManager {
     try {
       const res = await window.apiClient.getFriendsLeaderboard();
       if (!res.leaderboard || res.leaderboard.length === 0) {
-        container.innerHTML = `<div class="empty-state">No friends added yet. Go to Friends tab to add anglers!</div>`;
+        container.innerHTML = `<div class="empty-state">No friends added yet. Go to Friends tab to add friends!</div>`;
         return;
       }
 
@@ -464,7 +463,7 @@ class UIManager {
         <thead>
           <tr>
             <th>RANK</th>
-            <th>ANGLER</th>
+            <th>PLAYER</th>
             <th>BEST SCORE</th>
           </tr>
         </thead>
@@ -684,7 +683,7 @@ class UIManager {
   showGameOverModal(data) {
     document.getElementById('go-final-score').textContent = data.score.toLocaleString();
     document.getElementById('go-best-score').textContent = data.bestScore.toLocaleString();
-    document.getElementById('go-level-reached').textContent = `LEVEL ${data.level}: ${data.levelName.toUpperCase()}`;
+    document.getElementById('go-level-reached').textContent = `LEVEL ${data.level}`;
 
     const newBestBanner = document.getElementById('go-new-best-banner');
     if (data.isNewBest) {
