@@ -3,7 +3,7 @@ const GAMES_DATA = [
     id: "one-hook",
     title: "One Hook",
     badge: "NEW",
-    description: "Drop the hook with click or Spacebar, catch the fish, and go deeper. How big can your catch get?",
+    description: "Drop the hook with tap, click, or Spacebar, catch the fish, and go deeper. How big can your catch get?",
     image: "/assets/one_hook_cover.jpg",
     route: "/games/one-hook",
     isPlayable: true
