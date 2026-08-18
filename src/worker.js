@@ -106,8 +106,21 @@ async function ensureSchema(env) {
   }
 }
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function sendVerificationEmail({ email, username, code, env }) {
-  const subject = `Your OneHook Verification Code: ${code}`;
+  if (!env || !env.RESEND_API_KEY) {
+    console.error('[EMAIL ERROR] RESEND_API_KEY secret is not configured in worker environment.');
+    return {
+      success: false,
+      error: 'Email verification service is not configured. Please try again later or contact support.'
+    };
+  }
+
+  const subject = 'OneHook Arcade - Your Verification Code';
+  const fromEmail = 'OneHook Arcade <onboarding@resend.dev>';
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 12px; border: 1px solid #334155;">
       <h2 style="color: #38bdf8; text-align: center; margin-top: 0; font-size: 24px;">🎣 OneHook Arcade</h2>
@@ -121,59 +134,36 @@ async function sendVerificationEmail({ email, username, code, env }) {
   `;
   const text = `Ahoy ${username || 'Angler'},\n\nYour OneHook verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Fishing!`;
 
-  // 1. Resend API Integration (https://resend.com)
-  if (env && env.RESEND_API_KEY) {
-    try {
-      const fromEmail = env.EMAIL_FROM || 'OneHook Arcade <onboarding@resend.dev>';
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [email],
-          subject,
-          html,
-          text
-        })
-      });
-      if (res.ok) {
-        console.log(`[EMAIL] Verification code successfully sent to ${email} via Resend`);
-        return;
-      }
-    } catch (err) {
-      console.error('[EMAIL ERROR] Resend dispatch error:', err);
-    }
-  }
-
-  // 2. MailChannels Cloudflare Worker Direct Dispatch
   try {
-    const fromEmail = (env && env.EMAIL_FROM) || 'verify@sprintgames.online';
-    const mcRes = await fetch('https://api.mailchannels.net/tx/v1/send', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email, name: username || 'Angler' }] }],
-        from: { email: fromEmail, name: 'OneHook Arcade' },
+        from: fromEmail,
+        to: [email],
         subject,
-        content: [
-          { type: 'text/plain', value: text },
-          { type: 'text/html', value: html }
-        ]
+        html,
+        text
       })
     });
-    if (mcRes.ok) {
-      console.log(`[EMAIL] Verification code successfully sent to ${email} via MailChannels`);
-      return;
-    }
-  } catch (err) {
-    console.error('[EMAIL ERROR] MailChannels dispatch error:', err);
-  }
 
-  // 3. Fallback: Log to Cloudflare Worker logs for inspection / development
-  console.log(`[EMAIL VERIFICATION CODE] To: ${email} | Angler: ${username} | Code: ${code}`);
+    if (res.ok) {
+      console.log(`[EMAIL] Verification code successfully sent to ${email} via Resend`);
+      return { success: true };
+    }
+
+    const resendError = await res.json().catch(() => ({}));
+    console.error(`[EMAIL ERROR] Resend API error (${res.status}):`, JSON.stringify(resendError));
+
+    const clientMsg = resendError.message || 'Failed to send verification email. Please check your email address and try again.';
+    return { success: false, error: clientMsg };
+  } catch (err) {
+    console.error('[EMAIL ERROR] Resend dispatch network error:', err);
+    return { success: false, error: 'Failed to communicate with email delivery service. Please try again later.' };
+  }
 }
 
 export default {
@@ -211,6 +201,10 @@ export default {
           return jsonResponse({ error: 'Username must be between 2 and 20 characters' }, 400);
         }
 
+        if (!isValidEmail(cleanEmail)) {
+          return jsonResponse({ error: 'Please provide a valid email address' }, 400);
+        }
+
         // Check if email already registered
         const existingUser = await env.DB.prepare(`SELECT * FROM users WHERE email = ?`).bind(cleanEmail).first();
         if (existingUser) {
@@ -218,8 +212,17 @@ export default {
           const expiresAt = Date.now() + 10 * 60 * 1000;
           await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
 
-          // Send verification email
-          ctx.waitUntil(sendVerificationEmail({ email: cleanEmail, username: existingUser.username, code: otp, env }));
+          // Send verification email via Resend API
+          const emailResult = await sendVerificationEmail({
+            email: cleanEmail,
+            username: existingUser.username,
+            code: otp,
+            env
+          });
+
+          if (!emailResult.success) {
+            return jsonResponse({ error: emailResult.error }, 500);
+          }
 
           return jsonResponse({
             message: 'Verification code sent to your email. Please check your inbox!',
@@ -242,8 +245,17 @@ export default {
         const expiresAt = Date.now() + 10 * 60 * 1000;
         await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`).bind(cleanEmail, otp, expiresAt).run();
 
-        // Send verification email
-        ctx.waitUntil(sendVerificationEmail({ email: cleanEmail, username: cleanUsername, code: otp, env }));
+        // Send verification email via Resend API
+        const emailResult = await sendVerificationEmail({
+          email: cleanEmail,
+          username: cleanUsername,
+          code: otp,
+          env
+        });
+
+        if (!emailResult.success) {
+          return jsonResponse({ error: emailResult.error }, 500);
+        }
 
         return jsonResponse({
           message: 'Verification code sent to your email. Please check your inbox!',
