@@ -33,7 +33,9 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Server request failed');
+        const error = new Error(data.error || 'Server request failed');
+        error.status = response.status;
+        throw error;
       }
 
       return data;
@@ -80,7 +82,9 @@ class ApiClient {
       }
       return res.user;
     } catch (err) {
-      this.setSession(null, null);
+      if (err.status === 401 || err.status === 403 || err.status === 404) {
+        this.setSession(null, null);
+      }
       return null;
     }
   }
