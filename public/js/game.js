@@ -451,7 +451,8 @@ class GameEngine {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const catchRadius = (fish.width / 2) + 10;
 
-          if (dist < catchRadius) {
+          // Ensure the fish is physically under or level with the hook, not swimming into the line above it
+          if (dist < catchRadius && dy > -10) {
             // Catch Fish!
             fish.isCaught = true;
             h.caughtFish = fish;
