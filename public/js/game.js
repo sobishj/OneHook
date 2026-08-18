@@ -90,6 +90,11 @@ class GameEngine {
     }
 
     this.bubbles = []; // Only empty array, populated later by fish
+    
+    // Pre-spawn some fish on screen so there's no delay when opening the website
+    for (let i = 0; i < 4; i++) {
+      this.spawnFish(true);
+    }
 
     this.initDecorations();
   }
@@ -231,7 +236,7 @@ class GameEngine {
     this.lives = 3;
     this.level = 1;
     this.levelName = 'LEVEL 1';
-    this.fishList = [];
+    // Don't clear fishList here, keep the fish from the MENU state so there's no boring delay!
     this.catchesLog = [];
     this.startTime = Date.now();
     this.activeChallenge = challengeContext;
@@ -291,8 +296,8 @@ class GameEngine {
     }
   }
 
-  spawnFish() {
-    if (this.fishList.length >= this.maxFishCount) return;
+  spawnFish(onScreen = false) {
+    if (this.fishList && this.fishList.length >= this.maxFishCount) return;
 
     // Available species based on current stage/level
     let availableKeys = ['clownfish', 'blue_tang', 'yellow_sailfin'];
@@ -320,6 +325,11 @@ class GameEngine {
       canvasHeight: this.height
     });
 
+    if (onScreen) {
+      fish.x = Math.random() * (this.width - fish.width);
+    }
+
+    if (!this.fishList) this.fishList = [];
     this.fishList.push(fish);
   }
 

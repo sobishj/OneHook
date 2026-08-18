@@ -15,7 +15,9 @@ class Fish {
 
     // Speed scales dynamically with level: gentle at level 1, increasing with each level
     const levelScale = 1 + (this.level - 1) * 0.35;
-    this.baseSpeed = this.rawSpeed * levelScale;
+    // On mobile screens, boost speed slightly so they don't look overly slow
+    const mobileBoost = config.canvasWidth < 768 ? 1.4 : 1.0;
+    this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
 
     // Spatial properties
     this.direction = Math.random() > 0.5 ? 1 : -1; // 1 = right, -1 = left
@@ -45,7 +47,9 @@ class Fish {
   updateLevel(newLevel) {
     this.level = newLevel;
     const levelScale = 1 + (this.level - 1) * 0.35;
-    this.baseSpeed = this.rawSpeed * levelScale;
+    // Assuming config or passing canvas width isn't easy here, let's just use window.innerWidth for the dynamic update
+    const mobileBoost = window.innerWidth < 768 ? 1.4 : 1.0;
+    this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
     this.vx = (this.isTurning ? this.facingScaleX : this.direction) * (this.baseSpeed + Math.random() * 0.3);
     this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
   }
