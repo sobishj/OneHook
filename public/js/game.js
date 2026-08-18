@@ -17,10 +17,11 @@ class GameEngine {
     this.levelName = 'LEVEL 1';
 
     // Hook state
+    const initialStartY = this.width < 768 ? 160 : 95;
     this.hook = {
       x: this.width / 2,
-      y: 95,
-      startY: 95,
+      y: initialStartY,
+      startY: initialStartY,
       maxDepth: this.height * 0.85,
       speed: 12,
       reelSpeed: 16,
@@ -64,9 +65,10 @@ class GameEngine {
     this.ctx.scale(this.dpr, this.dpr);
 
     this.hook.x = this.width / 2;
-    this.hook.startY = 95;
+    const currentStartY = this.width < 768 ? 160 : 95;
+    this.hook.startY = currentStartY;
     if (this.hook.state === 'IDLE') {
-      this.hook.y = 95;
+      this.hook.y = currentStartY;
     }
     this.hook.maxDepth = this.height * 0.85;
 
