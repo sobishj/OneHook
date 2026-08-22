@@ -49,8 +49,11 @@ class UIManager {
     this.challengeModal = document.getElementById('challenge-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
 
-    // Target friend for sending a challenge
+    // Target friend and score for sending a challenge
     this.targetChallengeFriend = null;
+    this.targetChallengeScore = 0;
+    this.activeChallengeScoreForFriends = null;
+    this.lastMatchScore = 0;
 
     // Toasts
     this.toastContainer = document.getElementById('toast-container');
@@ -265,6 +268,19 @@ class UIManager {
             this.lastFailedChallengeContext.scoreToBeat
           );
         }
+      });
+    }
+
+    // Challenge Friends with current match score from Game Over Modal
+    const goChallengeFriendsBtn = document.getElementById('go-challenge-friends-btn');
+    if (goChallengeFriendsBtn) {
+      goChallengeFriendsBtn.addEventListener('click', () => {
+        if (!window.apiClient.user) {
+          this.openAuthModal();
+          return;
+        }
+        this.closeModal(this.gameOverModal);
+        this.openFriendsModal('list', this.lastMatchScore);
       });
     }
 
@@ -786,11 +802,12 @@ class UIManager {
   }
 
   // Friends Flow
-  openFriendsModal(tab = 'list') {
+  openFriendsModal(tab = 'list', scoreForChallenge = null) {
     if (!window.apiClient.user) {
       this.openAuthModal();
       return;
     }
+    this.activeChallengeScoreForFriends = (typeof scoreForChallenge === 'number' && scoreForChallenge > 0) ? scoreForChallenge : null;
     this.openModal(this.friendsModal);
     if (tab === 'list') {
       this.renderFriendsListTab();
@@ -820,6 +837,7 @@ class UIManager {
         return;
       }
 
+      const matchScoreParam = this.activeChallengeScoreForFriends ? this.activeChallengeScoreForFriends : 'null';
       let html = `<div class="friends-grid">`;
       res.friends.forEach((f) => {
         html += `
@@ -828,7 +846,7 @@ class UIManager {
               <span class="friend-name">👤 ${f.username}</span>
               <span class="friend-score">Best: <strong>${f.best_score.toLocaleString()}</strong></span>
             </div>
-            <button class="btn btn-challenge" onclick="uiManager.openSendChallengeModal('${f.id}', '${f.username}')">
+            <button class="btn btn-challenge" onclick="uiManager.openSendChallengeModal('${f.id}', '${f.username}', ${matchScoreParam})">
               ⚔️ CHALLENGE
             </button>
           </div>
@@ -965,7 +983,7 @@ class UIManager {
   // CHALLENGES FLOW & MODAL MANAGEMENT
   // =========================================================================
 
-  openSendChallengeModal(friendId, friendUsername) {
+  openSendChallengeModal(friendId, friendUsername, customScore = null) {
     if (!window.apiClient.user) {
       this.openAuthModal();
       return;
@@ -973,12 +991,17 @@ class UIManager {
 
     this.targetChallengeFriend = { id: friendId, username: friendUsername };
 
-    const myBest = window.apiClient.user.best_score || 0;
+    const scoreToSend = (typeof customScore === 'number' && customScore > 0)
+      ? customScore
+      : (window.apiClient.user.best_score || 0);
+
+    this.targetChallengeScore = scoreToSend;
+
     const nameEl = document.getElementById('send-ch-opponent-name');
     const scoreEl = document.getElementById('send-ch-my-score');
 
     if (nameEl) nameEl.textContent = friendUsername;
-    if (scoreEl) scoreEl.textContent = `${myBest.toLocaleString()} pts`;
+    if (scoreEl) scoreEl.textContent = `${scoreToSend.toLocaleString()} pts`;
 
     this.openModal(this.sendChallengeModal);
   }
@@ -990,7 +1013,7 @@ class UIManager {
     if (btn) btn.disabled = true;
 
     try {
-      const res = await window.apiClient.createChallenge(this.targetChallengeFriend.id);
+      const res = await window.apiClient.createChallenge(this.targetChallengeFriend.id, this.targetChallengeScore);
       this.showToast(res.message || `⚔️ Challenge sent to ${this.targetChallengeFriend.username}!`, 'success');
       this.closeModal(this.sendChallengeModal);
       this.checkPendingNotifications();
@@ -1250,7 +1273,7 @@ class UIManager {
           <div class="empty-state">
             <div style="font-size: 2rem; margin-bottom: 8px;">📤</div>
             <strong>No active sent challenges!</strong><br>
-            Go to <strong>Friends</strong> tab and click <strong>⚔️ CHALLENGE</strong> on any friend.
+            Go to <strong>Friends</strong> tab or finish a game match and click <strong>⚔️ CHALLENGE</strong>.
           </div>
         `;
         return;
@@ -1258,21 +1281,51 @@ class UIManager {
 
       let html = `<div class="challenge-list">`;
       sent.forEach((ch) => {
+        const hasAttempted = ch.opponentScore !== null && ch.opponentScore !== undefined;
+        const opponentWon = hasAttempted && (ch.opponentScore > ch.challengerScore || ch.winnerId === ch.opponentId);
+        const isDefending = hasAttempted && !opponentWon;
+
+        let badgeClass = 'badge-waiting';
+        let badgeText = '⏳ PENDING';
+        let cardClass = 'sent';
+        let statusTagHtml = `<div class="ch-status-tag">⏳ Pending friend attempt</div>`;
+
+        if (opponentWon) {
+          badgeClass = 'badge-lost';
+          badgeText = '💥 BEATEN';
+          cardClass = 'completed loss';
+          statusTagHtml = `<div class="ch-status-tag" style="background: #fee2e2; color: #dc2626;">💥 Friend beat your score with ${ch.opponentScore.toLocaleString()} pts</div>`;
+        } else if (isDefending) {
+          badgeClass = 'badge-won';
+          badgeText = '🛡️ DEFENDING';
+          cardClass = 'completed win';
+          statusTagHtml = `<div class="ch-status-tag" style="background: #ecfdf5; color: #059669;">🛡️ Friend attempted (${ch.opponentScore.toLocaleString()} pts) — Undefeated!</div>`;
+        }
+
         html += `
-          <div class="challenge-card sent">
+          <div class="challenge-card ${cardClass}">
             <div class="ch-card-header">
               <div class="ch-user-info">
-                <span class="ch-badge badge-waiting">⏳ WAITING</span>
+                <span class="ch-badge ${badgeClass}">${badgeText}</span>
                 <h4 class="ch-name">Challenged <strong>${ch.opponentUsername}</strong></h4>
               </div>
               <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
             </div>
-            <div class="ch-details-row">
-              <div class="ch-stat-mini">
-                <span class="lbl">YOUR SCORE TO BEAT</span>
-                <span class="val">${ch.challengerScore.toLocaleString()} pts</span>
+            <div class="ch-score-comparison">
+              <div class="ch-compare-box">
+                <span class="lbl">Your Score to Beat</span>
+                <span class="val highlight">${ch.challengerScore.toLocaleString()} pts</span>
               </div>
-              <div class="ch-status-tag">Pending friend attempt</div>
+              <div class="ch-compare-vs">VS</div>
+              <div class="ch-compare-box">
+                <span class="lbl">${ch.opponentUsername}'s Best Attempt</span>
+                <span class="val" style="${hasAttempted ? (opponentWon ? 'color: #dc2626;' : 'color: #059669;') : 'color: #94a3b8;'}">
+                  ${hasAttempted ? ch.opponentScore.toLocaleString() + ' pts' : 'Not played yet'}
+                </span>
+              </div>
+            </div>
+            <div class="ch-details-row" style="margin-top: 4px;">
+              ${statusTagHtml}
             </div>
           </div>
         `;
@@ -1390,6 +1443,7 @@ class UIManager {
 
   // Game Over Modal
   showGameOverModal(data) {
+    this.lastMatchScore = data.score || 0;
     document.getElementById('go-final-score').textContent = data.score.toLocaleString();
     document.getElementById('go-best-score').textContent = data.bestScore.toLocaleString();
     document.getElementById('go-level-reached').textContent = `LEVEL ${data.level}`;
@@ -1400,6 +1454,17 @@ class UIManager {
       window.soundManager.playLevelUp();
     } else {
       newBestBanner.classList.add('hidden');
+    }
+
+    // Challenge Friends with this match score button
+    const goChFriendsBtn = document.getElementById('go-challenge-friends-btn');
+    if (goChFriendsBtn) {
+      if (data.score > 0) {
+        goChFriendsBtn.classList.remove('hidden');
+        goChFriendsBtn.textContent = `⚔️ Challenge Friends with this Match (${data.score.toLocaleString()} pts)`;
+      } else {
+        goChFriendsBtn.classList.add('hidden');
+      }
     }
 
     // Challenge mode result banner & retry button

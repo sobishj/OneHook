@@ -142,10 +142,10 @@ class ApiClient {
   }
 
   // Challenges
-  async createChallenge(opponentId) {
+  async createChallenge(opponentId, score = null) {
     return this.request('/api/challenges/create', {
       method: 'POST',
-      body: JSON.stringify({ opponentId })
+      body: JSON.stringify({ opponentId, score })
     });
   }
 

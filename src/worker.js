@@ -672,7 +672,7 @@ export default {
         const challengerId = authUser.id;
 
         const body = await request.json().catch(() => ({}));
-        const { opponentId } = body;
+        const { opponentId, score } = body;
 
         if (!opponentId || opponentId === challengerId) {
           return jsonResponse({ error: 'Invalid opponent selected' }, 400);
@@ -684,30 +684,34 @@ export default {
         }
 
         const challenger = await env.DB.prepare(`SELECT id, username, best_score FROM users WHERE id = ?`).bind(challengerId).first();
-        const challengerScore = challenger ? (challenger.best_score || 0) : 0;
-        const scoreToBeat = challengerScore; // The opponent must beat the challenger's high score
+        const challengerScore = (typeof score === 'number' && score > 0)
+          ? Math.floor(score)
+          : (challenger ? (challenger.best_score || 0) : 0);
 
-        // Check if there's already an active pending challenge between these two
-        const existing = await env.DB.prepare(`
-          SELECT id FROM challenges
-          WHERE challenger_id = ? AND opponent_id = ? AND status = 'PENDING'
-        `).bind(challengerId, opponentId).first();
-
-        let challengeId;
-        if (existing) {
-          challengeId = existing.id;
-          await env.DB.prepare(`
-            UPDATE challenges
-            SET challenger_score = ?, score_to_beat = ?, created_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `).bind(challengerScore, scoreToBeat, challengeId).run();
-        } else {
-          challengeId = generateId('chg');
-          await env.DB.prepare(`
-            INSERT INTO challenges (id, challenger_id, opponent_id, score_to_beat, challenger_score, status)
-            VALUES (?, ?, ?, ?, ?, 'PENDING')
-          `).bind(challengeId, challengerId, opponentId, scoreToBeat, challengerScore).run();
+        if (challengerScore <= 0) {
+          return jsonResponse({ error: 'Score must be greater than 0 to send a challenge. Play a match first!' }, 400);
         }
+
+        const scoreToBeat = challengerScore; // The opponent must beat the challenger's match score
+
+        // Check if there's already a challenge with this EXACT score sent from this challenger to this opponent
+        const duplicateScoreChallenge = await env.DB.prepare(`
+          SELECT id, status, opponent_score, winner_id
+          FROM challenges
+          WHERE challenger_id = ? AND opponent_id = ? AND challenger_score = ?
+        `).bind(challengerId, opponentId, challengerScore).first();
+
+        if (duplicateScoreChallenge) {
+          return jsonResponse({
+            error: `You have already sent a challenge to ${opponent.username} with ${challengerScore.toLocaleString()} pts! Play another match to challenge with a new score.`
+          }, 400);
+        }
+
+        const challengeId = generateId('chg');
+        await env.DB.prepare(`
+          INSERT INTO challenges (id, challenger_id, opponent_id, score_to_beat, challenger_score, status)
+          VALUES (?, ?, ?, ?, ?, 'PENDING')
+        `).bind(challengeId, challengerId, opponentId, scoreToBeat, challengerScore).run();
 
         return jsonResponse({
           success: true,
