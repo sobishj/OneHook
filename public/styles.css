@@ -1170,7 +1170,7 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 18px;
   box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
   border: 1.5px solid rgba(255, 255, 255, 0.2);
 }
@@ -1196,14 +1196,6 @@ html, body {
   color: #ffffff;
   line-height: 1.1;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Two Challenge Options */
-.ch-options-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 18px;
 }
 
 /* Single-row Tab Header */

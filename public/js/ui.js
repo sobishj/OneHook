@@ -218,18 +218,6 @@ class UIManager {
     const chHeroBtn = document.getElementById('ch-hero-challenge-btn');
     if (chHeroBtn) chHeroBtn.addEventListener('click', () => this.openFriendPickerModal());
 
-    const chOptBestBtn = document.getElementById('ch-opt-best-score-btn');
-    if (chOptBestBtn) chOptBestBtn.addEventListener('click', () => this.openFriendPickerModal());
-
-    const chOptNewGameBtn = document.getElementById('ch-opt-new-game-btn');
-    if (chOptNewGameBtn) {
-      chOptNewGameBtn.addEventListener('click', () => {
-        this.closeModal(this.challengesModal);
-        this.pendingChallengeFromNewGame = true;
-        this.launchGame('one-hook');
-      });
-    }
-
     const chTabInc = document.getElementById('ch-tab-incoming');
     if (chTabInc) chTabInc.addEventListener('click', () => this.renderIncomingChallengesTab());
 
