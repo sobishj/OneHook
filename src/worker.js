@@ -675,7 +675,7 @@ export default {
         const { opponentId } = body;
 
         if (!opponentId || opponentId === challengerId) {
-          return jsonResponse({ error: 'Invalid opponent' }, 400);
+          return jsonResponse({ error: 'Invalid opponent selected' }, 400);
         }
 
         const opponent = await env.DB.prepare(`SELECT id, username, best_score FROM users WHERE id = ?`).bind(opponentId).first();
@@ -683,24 +683,42 @@ export default {
           return jsonResponse({ error: 'Opponent not found' }, 404);
         }
 
-        const challenger = await env.DB.prepare(`SELECT best_score FROM users WHERE id = ?`).bind(challengerId).first();
+        const challenger = await env.DB.prepare(`SELECT id, username, best_score FROM users WHERE id = ?`).bind(challengerId).first();
+        const challengerScore = challenger ? (challenger.best_score || 0) : 0;
+        const scoreToBeat = challengerScore; // The opponent must beat the challenger's high score
 
-        const challengeId = generateId('chg');
-        const scoreToBeat = opponent.best_score;
-        const challengerScore = challenger ? challenger.best_score : 0;
+        // Check if there's already an active pending challenge between these two
+        const existing = await env.DB.prepare(`
+          SELECT id FROM challenges
+          WHERE challenger_id = ? AND opponent_id = ? AND status = 'PENDING'
+        `).bind(challengerId, opponentId).first();
 
-        await env.DB.prepare(`
-          INSERT INTO challenges (id, challenger_id, opponent_id, score_to_beat, challenger_score, status)
-          VALUES (?, ?, ?, ?, ?, 'PENDING')
-        `).bind(challengeId, challengerId, opponentId, scoreToBeat, challengerScore).run();
+        let challengeId;
+        if (existing) {
+          challengeId = existing.id;
+          await env.DB.prepare(`
+            UPDATE challenges
+            SET challenger_score = ?, score_to_beat = ?, created_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).bind(challengerScore, scoreToBeat, challengeId).run();
+        } else {
+          challengeId = generateId('chg');
+          await env.DB.prepare(`
+            INSERT INTO challenges (id, challenger_id, opponent_id, score_to_beat, challenger_score, status)
+            VALUES (?, ?, ?, ?, ?, 'PENDING')
+          `).bind(challengeId, challengerId, opponentId, scoreToBeat, challengerScore).run();
+        }
 
         return jsonResponse({
+          success: true,
+          message: `⚔️ Challenge sent to ${opponent.username} to beat your score of ${scoreToBeat.toLocaleString()} pts!`,
           challengeId,
           opponent: {
             id: opponent.id,
             username: opponent.username,
-            scoreToBeat
-          }
+            bestScore: opponent.best_score
+          },
+          scoreToBeat
         });
       }
 
@@ -715,16 +733,71 @@ export default {
         const { results } = await env.DB.prepare(`
           SELECT c.*,
             u_challenger.username as challenger_username,
-            u_opponent.username as opponent_username
+            u_challenger.best_score as challenger_best,
+            u_opponent.username as opponent_username,
+            u_opponent.best_score as opponent_best
           FROM challenges c
           JOIN users u_challenger ON c.challenger_id = u_challenger.id
           JOIN users u_opponent ON c.opponent_id = u_opponent.id
           WHERE c.challenger_id = ? OR c.opponent_id = ?
           ORDER BY c.created_at DESC
-          LIMIT 20
+          LIMIT 50
         `).bind(userId, userId).all();
 
-        return jsonResponse({ challenges: results || [] });
+        const allChallenges = results || [];
+        const incoming = [];
+        const sent = [];
+        const completed = [];
+        let wonCount = 0;
+
+        for (const ch of allChallenges) {
+          const isOpponent = ch.opponent_id === userId;
+          const isChallenger = ch.challenger_id === userId;
+
+          const item = {
+            id: ch.id,
+            challengerId: ch.challenger_id,
+            challengerUsername: ch.challenger_username,
+            challengerScore: ch.challenger_score,
+            opponentId: ch.opponent_id,
+            opponentUsername: ch.opponent_username,
+            opponentScore: ch.opponent_score,
+            scoreToBeat: ch.score_to_beat,
+            status: ch.status,
+            winnerId: ch.winner_id,
+            createdAt: ch.created_at,
+            isIncoming: isOpponent,
+            isSent: isChallenger,
+            isWinner: ch.winner_id === userId,
+            isCompleted: ch.status === 'COMPLETED'
+          };
+
+          if (ch.status === 'COMPLETED') {
+            completed.push(item);
+            if (ch.winner_id === userId) {
+              wonCount++;
+            }
+          } else {
+            if (isOpponent) {
+              incoming.push(item);
+            } else if (isChallenger) {
+              sent.push(item);
+            }
+          }
+        }
+
+        return jsonResponse({
+          challenges: allChallenges,
+          incoming,
+          sent,
+          completed,
+          stats: {
+            incomingCount: incoming.length,
+            sentCount: sent.length,
+            wonCount,
+            totalCount: allChallenges.length
+          }
+        });
       }
 
       // POST /api/challenges/complete
@@ -754,9 +827,9 @@ export default {
           return jsonResponse({ error: 'Not authorized for this challenge' }, 403);
         }
 
-        const targetScore = isChallenger ? challenge.score_to_beat : challenge.challenger_score;
+        const targetScore = challenge.challenger_score;
         const won = scoreAchieved > targetScore;
-        const winnerId = won ? userId : (isChallenger ? challenge.opponent_id : challenge.challenger_id);
+        const winnerId = won ? userId : challenge.challenger_id;
 
         await env.DB.prepare(`
           UPDATE challenges
@@ -767,13 +840,20 @@ export default {
         const challengerUser = await env.DB.prepare(`SELECT username FROM users WHERE id = ?`).bind(challenge.challenger_id).first();
         const opponentUser = await env.DB.prepare(`SELECT username FROM users WHERE id = ?`).bind(challenge.opponent_id).first();
 
+        const challengerName = challengerUser ? challengerUser.username : 'Challenger';
+        const opponentName = opponentUser ? opponentUser.username : 'Opponent';
+
         return jsonResponse({
+          success: true,
           won,
           scoreAchieved,
           targetScore,
           winnerId,
-          challengerUsername: challengerUser ? challengerUser.username : 'Challenger',
-          opponentUsername: opponentUser ? opponentUser.username : 'Opponent'
+          challengerUsername: challengerName,
+          opponentUsername: opponentName,
+          message: won
+            ? `🎉 VICTORY! You beat ${challengerName}'s score of ${targetScore.toLocaleString()} with ${scoreAchieved.toLocaleString()} pts!`
+            : `Nice try! You scored ${scoreAchieved.toLocaleString()} pts, but needed over ${targetScore.toLocaleString()} to beat ${challengerName}.`
         });
       }
 

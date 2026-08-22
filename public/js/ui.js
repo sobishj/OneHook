@@ -44,8 +44,13 @@ class UIManager {
     this.authModal = document.getElementById('auth-modal');
     this.leaderboardModal = document.getElementById('leaderboard-modal');
     this.friendsModal = document.getElementById('friends-modal');
+    this.challengesModal = document.getElementById('challenges-modal');
+    this.sendChallengeModal = document.getElementById('send-challenge-modal');
     this.challengeModal = document.getElementById('challenge-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
+
+    // Target friend for sending a challenge
+    this.targetChallengeFriend = null;
 
     // Toasts
     this.toastContainer = document.getElementById('toast-container');
@@ -76,6 +81,9 @@ class UIManager {
     // Header Navigation Buttons
     const openLbBtn = document.getElementById('open-leaderboard-btn');
     if (openLbBtn) openLbBtn.addEventListener('click', () => this.openLeaderboardModal('global'));
+
+    const openChBtn = document.getElementById('open-challenges-btn');
+    if (openChBtn) openChBtn.addEventListener('click', () => this.openChallengesModal('incoming'));
 
     const openFrBtn = document.getElementById('open-friends-btn');
     if (openFrBtn) openFrBtn.addEventListener('click', () => this.openFriendsModal('list'));
@@ -194,7 +202,30 @@ class UIManager {
     document.getElementById('close-friends-btn').addEventListener('click', () => this.closeModal(this.friendsModal));
     document.getElementById('friend-search-btn').addEventListener('click', () => this.handleFriendSearch());
 
-    // Challenge Modal
+    // Challenges Hub Tabs & Buttons
+    const closeChBtn = document.getElementById('close-challenges-btn');
+    if (closeChBtn) closeChBtn.addEventListener('click', () => this.closeModal(this.challengesModal));
+
+    const chTabInc = document.getElementById('ch-tab-incoming');
+    if (chTabInc) chTabInc.addEventListener('click', () => this.renderIncomingChallengesTab());
+
+    const chTabSent = document.getElementById('ch-tab-sent');
+    if (chTabSent) chTabSent.addEventListener('click', () => this.renderSentChallengesTab());
+
+    const chTabHist = document.getElementById('ch-tab-history');
+    if (chTabHist) chTabHist.addEventListener('click', () => this.renderHistoryChallengesTab());
+
+    // Send Challenge Modal Handlers
+    const closeSendChBtn = document.getElementById('close-send-challenge-btn');
+    if (closeSendChBtn) closeSendChBtn.addEventListener('click', () => this.closeModal(this.sendChallengeModal));
+
+    const cancelSendChBtn = document.getElementById('cancel-send-challenge-btn');
+    if (cancelSendChBtn) cancelSendChBtn.addEventListener('click', () => this.closeModal(this.sendChallengeModal));
+
+    const confirmSendChBtn = document.getElementById('confirm-send-challenge-btn');
+    if (confirmSendChBtn) confirmSendChBtn.addEventListener('click', () => this.confirmSendChallenge());
+
+    // Play Challenge Modal
     document.getElementById('start-challenge-btn').addEventListener('click', () => {
       this.closeModal(this.challengeModal);
       this.launchGame('one-hook', this.selectedChallengeOpponent);
@@ -329,17 +360,43 @@ class UIManager {
   async checkPendingNotifications() {
     if (!window.apiClient || !window.apiClient.user) return;
     try {
-      const res = await window.apiClient.getPendingRequests();
-      const count = res.requests ? res.requests.length : 0;
+      const [frRes, chRes] = await Promise.all([
+        window.apiClient.getPendingRequests().catch(() => ({ requests: [] })),
+        window.apiClient.getChallengesList().catch(() => ({ stats: {}, incoming: [] }))
+      ]);
+
+      // Friends Requests Badge
+      const reqCount = frRes.requests ? frRes.requests.length : 0;
       const frBadge = document.getElementById('friends-pending-badge');
       const reqBadge = document.getElementById('requests-tab-badge');
-
-      if (count > 0) {
-        if (frBadge) { frBadge.textContent = count; frBadge.classList.remove('hidden'); }
-        if (reqBadge) { reqBadge.textContent = count; reqBadge.classList.remove('hidden'); }
+      if (reqCount > 0) {
+        if (frBadge) { frBadge.textContent = reqCount; frBadge.classList.remove('hidden'); }
+        if (reqBadge) { reqBadge.textContent = reqCount; reqBadge.classList.remove('hidden'); }
       } else {
         if (frBadge) frBadge.classList.add('hidden');
         if (reqBadge) reqBadge.classList.add('hidden');
+      }
+
+      // Challenges Badge
+      const incCount = chRes.stats ? (chRes.stats.incomingCount || 0) : 0;
+      const chBadge = document.getElementById('challenges-pending-badge');
+      const chTabBadge = document.getElementById('ch-tab-incoming-badge');
+      if (incCount > 0) {
+        if (chBadge) { chBadge.textContent = incCount; chBadge.classList.remove('hidden'); }
+        if (chTabBadge) { chTabBadge.textContent = incCount; chTabBadge.classList.remove('hidden'); }
+      } else {
+        if (chBadge) chBadge.classList.add('hidden');
+        if (chTabBadge) chTabBadge.classList.add('hidden');
+      }
+
+      // Update Header Stats if challenges modal is open
+      if (chRes.stats) {
+        const statInc = document.getElementById('ch-stat-incoming');
+        const statWon = document.getElementById('ch-stat-won');
+        const statSent = document.getElementById('ch-stat-sent');
+        if (statInc) statInc.textContent = chRes.stats.incomingCount || 0;
+        if (statWon) statWon.textContent = chRes.stats.wonCount || 0;
+        if (statSent) statSent.textContent = chRes.stats.sentCount || 0;
       }
     } catch (e) {}
   }
@@ -711,7 +768,7 @@ class UIManager {
               <span class="friend-name">👤 ${f.username}</span>
               <span class="friend-score">Best: <strong>${f.best_score.toLocaleString()}</strong></span>
             </div>
-            <button class="btn btn-challenge" onclick="uiManager.openChallengeModal('${f.id}', '${f.username}', ${f.best_score})">
+            <button class="btn btn-challenge" onclick="uiManager.openSendChallengeModal('${f.id}', '${f.username}')">
               ⚔️ CHALLENGE
             </button>
           </div>
@@ -844,6 +901,269 @@ class UIManager {
     }
   }
 
+  // =========================================================================
+  // CHALLENGES FLOW & MODAL MANAGEMENT
+  // =========================================================================
+
+  openSendChallengeModal(friendId, friendUsername) {
+    if (!window.apiClient.user) {
+      this.openAuthModal();
+      return;
+    }
+
+    this.targetChallengeFriend = { id: friendId, username: friendUsername };
+
+    const myBest = window.apiClient.user.best_score || 0;
+    const nameEl = document.getElementById('send-ch-opponent-name');
+    const scoreEl = document.getElementById('send-ch-my-score');
+
+    if (nameEl) nameEl.textContent = friendUsername;
+    if (scoreEl) scoreEl.textContent = `${myBest.toLocaleString()} pts`;
+
+    this.openModal(this.sendChallengeModal);
+  }
+
+  async confirmSendChallenge() {
+    if (!this.targetChallengeFriend) return;
+
+    const btn = document.getElementById('confirm-send-challenge-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await window.apiClient.createChallenge(this.targetChallengeFriend.id);
+      this.showToast(res.message || `⚔️ Challenge sent to ${this.targetChallengeFriend.username}!`, 'success');
+      this.closeModal(this.sendChallengeModal);
+      this.checkPendingNotifications();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to send challenge', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  openChallengesModal(tab = 'incoming') {
+    if (!window.apiClient.user) {
+      this.openAuthModal();
+      return;
+    }
+
+    this.openModal(this.challengesModal);
+    if (tab === 'incoming') {
+      this.renderIncomingChallengesTab();
+    } else if (tab === 'sent') {
+      this.renderSentChallengesTab();
+    } else {
+      this.renderHistoryChallengesTab();
+    }
+  }
+
+  async renderIncomingChallengesTab() {
+    document.getElementById('ch-tab-incoming').classList.add('active');
+    document.getElementById('ch-tab-sent').classList.remove('active');
+    document.getElementById('ch-tab-history').classList.remove('active');
+
+    document.getElementById('ch-section-incoming').classList.remove('hidden');
+    document.getElementById('ch-section-sent').classList.add('hidden');
+    document.getElementById('ch-section-history').classList.add('hidden');
+
+    const container = document.getElementById('ch-incoming-container');
+    container.innerHTML = `<div class="loading-spinner">Loading incoming challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      this.checkPendingNotifications();
+
+      const incoming = res.incoming || [];
+      if (incoming.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>
+            <strong>No active incoming challenges!</strong><br>
+            When friends challenge your high score, they will appear here.
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div class="challenge-list">`;
+      incoming.forEach((ch) => {
+        html += `
+          <div class="challenge-card incoming">
+            <div class="ch-card-header">
+              <div class="ch-user-info">
+                <span class="ch-badge badge-incoming">⚔️ CHALLENGE</span>
+                <h4 class="ch-name">From <strong>${ch.challengerUsername}</strong></h4>
+              </div>
+              <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
+            </div>
+            <div class="ch-target-box">
+              <span class="ch-target-lbl">SCORE TO BEAT</span>
+              <span class="ch-target-val highlight">${ch.challengerScore.toLocaleString()} <small>pts</small></span>
+            </div>
+            <button class="btn btn-yellow-play btn-full ch-action-btn" onclick="uiManager.startIncomingChallenge('${ch.id}', '${ch.challengerUsername}', ${ch.challengerScore})">
+              ⚔️ ACCEPT & PLAY NOW
+            </button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load challenges: ${err.message}</div>`;
+    }
+  }
+
+  startIncomingChallenge(challengeId, challengerUsername, scoreToBeat) {
+    this.closeModal(this.challengesModal);
+    this.launchGame('one-hook', {
+      id: challengeId,
+      username: challengerUsername,
+      scoreToBeat: scoreToBeat
+    });
+  }
+
+  async renderSentChallengesTab() {
+    document.getElementById('ch-tab-incoming').classList.remove('active');
+    document.getElementById('ch-tab-sent').classList.add('active');
+    document.getElementById('ch-tab-history').classList.remove('active');
+
+    document.getElementById('ch-section-incoming').classList.add('hidden');
+    document.getElementById('ch-section-sent').classList.remove('hidden');
+    document.getElementById('ch-section-history').classList.add('hidden');
+
+    const container = document.getElementById('ch-sent-container');
+    container.innerHTML = `<div class="loading-spinner">Loading sent challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      this.checkPendingNotifications();
+
+      const sent = res.sent || [];
+      if (sent.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2rem; margin-bottom: 8px;">📤</div>
+            <strong>No active sent challenges!</strong><br>
+            Go to <strong>Friends</strong> tab and click <strong>⚔️ CHALLENGE</strong> on any friend.
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div class="challenge-list">`;
+      sent.forEach((ch) => {
+        html += `
+          <div class="challenge-card sent">
+            <div class="ch-card-header">
+              <div class="ch-user-info">
+                <span class="ch-badge badge-waiting">⏳ WAITING</span>
+                <h4 class="ch-name">Challenged <strong>${ch.opponentUsername}</strong></h4>
+              </div>
+              <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
+            </div>
+            <div class="ch-details-row">
+              <div class="ch-stat-mini">
+                <span class="lbl">YOUR SCORE TO BEAT</span>
+                <span class="val">${ch.challengerScore.toLocaleString()} pts</span>
+              </div>
+              <div class="ch-status-tag">Pending friend attempt</div>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load sent challenges: ${err.message}</div>`;
+    }
+  }
+
+  async renderHistoryChallengesTab() {
+    document.getElementById('ch-tab-incoming').classList.remove('active');
+    document.getElementById('ch-tab-sent').classList.remove('active');
+    document.getElementById('ch-tab-history').classList.add('active');
+
+    document.getElementById('ch-section-incoming').classList.add('hidden');
+    document.getElementById('ch-section-sent').classList.add('hidden');
+    document.getElementById('ch-section-history').classList.remove('hidden');
+
+    const container = document.getElementById('ch-history-container');
+    container.innerHTML = `<div class="loading-spinner">Loading completed history...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      const completed = res.completed || [];
+      const currentUserId = window.apiClient.user ? window.apiClient.user.id : null;
+
+      if (completed.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2rem; margin-bottom: 8px;">📜</div>
+            <strong>No completed challenge history yet.</strong><br>
+            Completed duels between you and your friends will show here.
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div class="challenge-list">`;
+      completed.forEach((ch) => {
+        const isWinner = ch.winnerId === currentUserId;
+        const opponentName = ch.isIncoming ? ch.challengerUsername : ch.opponentUsername;
+        const resultClass = isWinner ? 'win' : 'loss';
+        const resultBadge = isWinner ? '🏆 YOU WON' : '❌ LOST';
+
+        html += `
+          <div class="challenge-card completed ${resultClass}">
+            <div class="ch-card-header">
+              <div class="ch-user-info">
+                <span class="ch-badge ${isWinner ? 'badge-won' : 'badge-lost'}">${resultBadge}</span>
+                <h4 class="ch-name">vs <strong>${opponentName}</strong></h4>
+              </div>
+              <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
+            </div>
+            <div class="ch-score-comparison">
+              <div class="ch-compare-box">
+                <span class="lbl">${ch.challengerUsername} (Target)</span>
+                <span class="val">${ch.challengerScore.toLocaleString()} pts</span>
+              </div>
+              <div class="ch-compare-vs">VS</div>
+              <div class="ch-compare-box">
+                <span class="lbl">${ch.opponentUsername} (Score)</span>
+                <span class="val highlight">${(ch.opponentScore || 0).toLocaleString()} pts</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load history: ${err.message}</div>`;
+    }
+  }
+
+  formatRelativeTime(timestamp) {
+    if (!timestamp) return '';
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString();
+    } catch (e) {
+      return '';
+    }
+  }
+
   // Challenge Flow
   openChallengeModal(opponentId, username, bestScore) {
     this.selectedChallengeOpponent = {
@@ -853,7 +1173,7 @@ class UIManager {
     };
 
     document.getElementById('ch-opponent-name').textContent = username;
-    document.getElementById('ch-score-target').textContent = bestScore.toLocaleString();
+    document.getElementById('ch-score-target').textContent = (bestScore || 0).toLocaleString();
     this.closeModal(this.friendsModal);
     this.openModal(this.challengeModal);
   }
@@ -879,15 +1199,15 @@ class UIManager {
       if (data.challengeResult.won) {
         chBanner.innerHTML = `
           <div class="challenge-win">
-            🏆 <h3>YOU BEAT ${data.challengeResult.opponentUsername.toUpperCase()}!</h3>
-            <p>You: <strong>${data.challengeResult.scoreAchieved.toLocaleString()}</strong> | ${data.challengeResult.opponentUsername}: ${data.challengeResult.targetScore.toLocaleString()}</p>
+            🏆 <h3>YOU BEAT ${data.challengeResult.challengerUsername ? data.challengeResult.challengerUsername.toUpperCase() : 'YOUR FRIEND'}!</h3>
+            <p>You: <strong>${data.challengeResult.scoreAchieved.toLocaleString()}</strong> pts | Target: ${data.challengeResult.targetScore.toLocaleString()} pts</p>
           </div>
         `;
       } else {
         chBanner.innerHTML = `
           <div class="challenge-loss">
             😤 <h3>SO CLOSE!</h3>
-            <p>You: <strong>${data.challengeResult.scoreAchieved.toLocaleString()}</strong> | Target: ${data.challengeResult.targetScore.toLocaleString()}</p>
+            <p>You: <strong>${data.challengeResult.scoreAchieved.toLocaleString()}</strong> pts | Target: ${data.challengeResult.targetScore.toLocaleString()} pts</p>
           </div>
         `;
       }
@@ -900,3 +1220,4 @@ class UIManager {
 }
 
 window.uiManager = new UIManager();
+

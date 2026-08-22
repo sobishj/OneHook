@@ -1157,6 +1157,256 @@ html, body {
   margin-bottom: 20px;
 }
 
+/* ==========================================================================
+   CHALLENGES HUB STYLES
+   ========================================================================== */
+.challenge-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.ch-stat-box {
+  background: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ch-stat-box.highlight {
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.ch-stat-num {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0284c7;
+  line-height: 1.1;
+}
+
+.ch-stat-box.highlight .ch-stat-num {
+  color: #d97706;
+}
+
+.ch-stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.challenge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.challenge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.1);
+}
+
+.challenge-card.incoming {
+  border-color: #bae6fd;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.challenge-card.sent {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.challenge-card.completed.win {
+  border-color: #a7f3d0;
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+}
+
+.challenge-card.completed.loss {
+  border-color: #fecaca;
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+}
+
+.ch-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ch-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ch-name {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  color: #0f172a;
+  margin: 0;
+}
+
+.ch-date {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.ch-badge {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge-incoming {
+  background: #ec4899;
+  color: #fff;
+}
+
+.badge-waiting {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.badge-won {
+  background: #10b981;
+  color: #fff;
+}
+
+.badge-lost {
+  background: #ef4444;
+  color: #fff;
+}
+
+.ch-target-box {
+  background: #ffffff;
+  border: 1.5px dashed #0284c7;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ch-target-lbl {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0369a1;
+  letter-spacing: 0.8px;
+}
+
+.ch-target-val {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #d97706;
+}
+
+.ch-target-val small {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ch-action-btn {
+  margin-top: 2px;
+}
+
+.ch-details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ch-stat-mini .lbl {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: block;
+}
+
+.ch-stat-mini .val {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.ch-status-tag {
+  font-size: 0.75rem;
+  color: #d97706;
+  font-weight: 600;
+  background: #fef3c7;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.ch-score-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 10px 6px;
+  margin-top: 4px;
+}
+
+.ch-compare-box {
+  text-align: center;
+}
+
+.ch-compare-box .lbl {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ch-compare-box .val {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ch-compare-box .val.highlight {
+  color: #0284c7;
+}
+
+.ch-compare-vs {
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #cbd5e1;
+}
+
 /* Toast Notifications */
 #toast-container {
   position: fixed;

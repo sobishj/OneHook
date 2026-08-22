@@ -43,6 +43,7 @@
 
       <div class="portal-nav-actions">
         <button id="open-leaderboard-btn" class="btn btn-nav-item">🏆 Leaderboard</button>
+        <button id="open-challenges-btn" class="btn btn-nav-item">⚔️ Challenges <span id="challenges-pending-badge" class="nav-badge hidden">0</span></button>
         <button id="open-friends-btn" class="btn btn-nav-item">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
         <button id="user-profile-badge" class="btn btn-nav-item">👤 Sign In/ Sign Up</button>
         <button id="audio-toggle-btn-nav" class="btn btn-nav-icon" title="Toggle Sound">🔊</button>
@@ -234,7 +235,72 @@
       </div>
     </div>
 
-    <!-- Challenge Modal -->
+    <!-- Challenges Hub Modal -->
+    <div id="challenges-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel modal-lg">
+        <button id="close-challenges-btn" class="modal-close">&times;</button>
+        <h2>⚔️ CHALLENGES</h2>
+
+        <!-- Stats Overview Banner -->
+        <div class="challenge-stats-grid">
+          <div class="ch-stat-box">
+            <span class="ch-stat-num" id="ch-stat-incoming">0</span>
+            <span class="ch-stat-label">📥 Incoming</span>
+          </div>
+          <div class="ch-stat-box highlight">
+            <span class="ch-stat-num" id="ch-stat-won">0</span>
+            <span class="ch-stat-label">🏆 Won</span>
+          </div>
+          <div class="ch-stat-box">
+            <span class="ch-stat-num" id="ch-stat-sent">0</span>
+            <span class="ch-stat-label">📤 Sent</span>
+          </div>
+        </div>
+
+        <div class="tab-header">
+          <button id="ch-tab-incoming" class="tab-btn active">📥 Incoming <span id="ch-tab-incoming-badge" class="nav-badge hidden">0</span></button>
+          <button id="ch-tab-sent" class="tab-btn">📤 Sent</button>
+          <button id="ch-tab-history" class="tab-btn">📜 History</button>
+        </div>
+
+        <!-- Incoming Challenges Section -->
+        <div id="ch-section-incoming" class="tab-content">
+          <div id="ch-incoming-container"></div>
+        </div>
+
+        <!-- Sent Challenges Section -->
+        <div id="ch-section-sent" class="tab-content hidden">
+          <div id="ch-sent-container"></div>
+        </div>
+
+        <!-- History Challenges Section -->
+        <div id="ch-section-history" class="tab-content hidden">
+          <div id="ch-history-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Challenge Modal -->
+    <div id="send-challenge-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel text-center">
+        <button id="close-send-challenge-btn" class="modal-close">&times;</button>
+        <div class="challenge-icon">⚔️</div>
+        <h2>CHALLENGE <span id="send-ch-opponent-name">FRIEND</span></h2>
+        <p class="modal-desc">Challenge your friend to beat your personal highest score!</p>
+        
+        <div class="target-score-card">
+          <span class="lbl">YOUR HIGH SCORE TO BEAT</span>
+          <span id="send-ch-my-score" class="val">0</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button id="confirm-send-challenge-btn" class="btn btn-yellow-play btn-full">🚀 SEND CHALLENGE</button>
+          <button id="cancel-send-challenge-btn" class="btn btn-secondary btn-full" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Play / Accept Challenge Modal -->
     <div id="challenge-modal" class="modal-backdrop hidden">
       <div class="modal-card glass-panel text-center">
         <button id="close-challenge-btn" class="modal-close">&times;</button>
@@ -243,10 +309,10 @@
         
         <div class="target-score-card">
           <span class="lbl">SCORE TO BEAT</span>
-          <span id="ch-score-target" class="val">2,842</span>
+          <span id="ch-score-target" class="val">0</span>
         </div>
 
-        <p class="challenge-desc">Catch as many fish as possible without missing!</p>
+        <p class="challenge-desc">Catch as many fish as possible to beat your friend's score!</p>
 
         <button id="start-challenge-btn" class="btn btn-yellow-play btn-full">PLAY CHALLENGE</button>
       </div>
