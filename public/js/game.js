@@ -23,8 +23,8 @@ class GameEngine {
       y: initialStartY,
       startY: initialStartY,
       maxDepth: this.height * 0.85,
-      speed: 12,
-      reelSpeed: 16,
+      speed: this.width < 768 ? 16 : 14,
+      reelSpeed: this.width < 768 ? 20 : 18,
       state: 'IDLE', // 'IDLE', 'DROPPING', 'RETRACTING', 'CAUGHT'
       caughtFish: null
     };
@@ -412,7 +412,8 @@ class GameEngine {
 
     // Hook movement logic
     if (this.state === 'PLAYING') {
-      this.updateHook();
+      const frameScale = Math.min(2.5, Math.max(0.5, (dt || 0.0166) * 60));
+      this.updateHook(frameScale);
     }
 
     // Floating text popups (+5, +10, +50)
@@ -447,11 +448,11 @@ class GameEngine {
     }
   }
 
-  updateHook() {
+  updateHook(frameScale = 1) {
     const h = this.hook;
 
     if (h.state === 'DROPPING') {
-      h.y += h.speed;
+      h.y += h.speed * frameScale;
 
       // Check collision with fish
       for (const fish of this.fishList) {
@@ -498,7 +499,7 @@ class GameEngine {
       }
 
     } else if (h.state === 'RETRACTING') {
-      h.y -= h.reelSpeed;
+      h.y -= h.reelSpeed * frameScale;
 
       if (h.caughtFish) {
         h.caughtFish.x = h.x;

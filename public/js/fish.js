@@ -15,8 +15,9 @@ class Fish {
 
     // Speed scales dynamically with level: gentle at level 1, increasing with each level
     const levelScale = 1 + (this.level - 1) * 0.35;
-    // On mobile screens, boost speed slightly so they don't look overly slow
-    const mobileBoost = config.canvasWidth < 768 ? 1.4 : 1.0;
+    // On mobile / iPhone screens, boost speed significantly so fish swim with lively pace across narrow portrait screens
+    const isMobile = (config.canvasWidth && config.canvasWidth < 768) || (typeof window !== 'undefined' && window.innerWidth < 768);
+    const mobileBoost = isMobile ? 2.4 : 1.3;
     this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
 
     // Spatial properties
@@ -29,7 +30,7 @@ class Fish {
     this.vy = 0;
 
     this.swimPhase = Math.random() * Math.PI * 2;
-    this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
+    this.swimSpeed = 0.16 + (this.baseSpeed * 0.025);
 
     this.isCaught = false;
     this.strugglePhase = 0;
@@ -47,11 +48,11 @@ class Fish {
   updateLevel(newLevel) {
     this.level = newLevel;
     const levelScale = 1 + (this.level - 1) * 0.35;
-    // Assuming config or passing canvas width isn't easy here, let's just use window.innerWidth for the dynamic update
-    const mobileBoost = window.innerWidth < 768 ? 1.4 : 1.0;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const mobileBoost = isMobile ? 2.4 : 1.3;
     this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
     this.vx = (this.isTurning ? this.facingScaleX : this.direction) * (this.baseSpeed + Math.random() * 0.3);
-    this.swimSpeed = 0.10 + (this.baseSpeed * 0.02);
+    this.swimSpeed = 0.16 + (this.baseSpeed * 0.025);
   }
 
   scare(scareX, canvasHeight) {
@@ -71,26 +72,28 @@ class Fish {
   }
 
   update(dt, canvasWidth, canvasHeight, engine) {
+    const frameScale = Math.min(2.5, Math.max(0.5, (dt || 0.0166) * 60));
+
     if (this.isCaught) {
-      this.strugglePhase += 0.4;
+      this.strugglePhase += 0.4 * frameScale;
       return;
     }
 
     if (this.isScared) {
-      this.scareTimer--;
+      this.scareTimer -= 1 * frameScale;
       if (this.scareTimer <= 0) {
         this.isScared = false;
       }
     }
 
-    this.swimPhase += this.swimSpeed * (this.isScared ? 2 : 1);
+    this.swimPhase += this.swimSpeed * (this.isScared ? 2 : 1) * frameScale;
 
     // Organic vertical sine bobbing
-    this.y += Math.sin(this.swimPhase * 0.7) * (this.isScared ? 0.8 : 0.35);
+    this.y += Math.sin(this.swimPhase * 0.7) * (this.isScared ? 0.8 : 0.35) * frameScale;
 
     // Natural smooth turn execution
     if (this.isTurning) {
-      this.turnProgress += this.isScared ? 0.08 : 0.045; // ~22 frames smooth turn (~0.35s)
+      this.turnProgress += (this.isScared ? 0.08 : 0.045) * frameScale; // ~22 frames smooth turn (~0.35s)
       
       // Cosine interpolation from current direction to new direction for 3D flip effect
       this.facingScaleX = this.direction * Math.cos(this.turnProgress * Math.PI);
@@ -115,7 +118,7 @@ class Fish {
       // Safe & Rare Turning Check: STRICTLY NEVER TURN NEAR THE CENTER TO PREVENT DODGING / CHEATING
       // Center zone [30% - 70%] is 100% turn-free!
       if (this.canTurn && this.turnsCount < this.maxTurns) {
-        this.turnCooldown--;
+        this.turnCooldown -= 1 * frameScale;
 
         const inLeftFlank = this.x > 80 && this.x < canvasWidth * 0.30;
         const inRightFlank = this.x > canvasWidth * 0.70 && this.x < canvasWidth - 80;
@@ -134,7 +137,7 @@ class Fish {
       }
     }
 
-    this.x += this.vx;
+    this.x += this.vx * frameScale;
 
     // Spawn bubbles when moving fast (scared) or turning
     if (engine && (this.isScared || this.isTurning)) {
@@ -153,7 +156,7 @@ class Fish {
 
     // Smoothly drift toward targetY if set
     if (Math.abs(this.y - this.targetY) > 1.5) {
-      this.y += (this.targetY - this.y) * 0.025;
+      this.y += (this.targetY - this.y) * 0.025 * frameScale;
     }
   }
 
