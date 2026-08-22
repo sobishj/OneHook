@@ -241,31 +241,27 @@
         <button id="close-challenges-btn" class="modal-close">&times;</button>
         <h2>⚔️ CHALLENGES</h2>
 
-        <!-- Stats Overview Banner -->
-        <div class="challenge-stats-grid">
-          <div class="ch-stat-box">
-            <span class="ch-stat-num" id="ch-stat-incoming">0</span>
-            <span class="ch-stat-label">📥 Incoming</span>
+        <!-- Hero Section -->
+        <div class="ch-hero-card">
+          <div class="ch-hero-info">
+            <span class="ch-hero-label">YOUR BEST SCORE</span>
+            <span id="ch-hero-score" class="ch-hero-score-val">0</span>
           </div>
-          <div class="ch-stat-box highlight-won">
-            <span class="ch-stat-num" id="ch-stat-won">0</span>
-            <span class="ch-stat-label">🏆 Won</span>
-          </div>
-          <div class="ch-stat-box highlight-lost">
-            <span class="ch-stat-num" id="ch-stat-lost">0</span>
-            <span class="ch-stat-label">❌ Retry</span>
-          </div>
-          <div class="ch-stat-box">
-            <span class="ch-stat-num" id="ch-stat-sent">0</span>
-            <span class="ch-stat-label">📤 Sent</span>
-          </div>
+          <button id="ch-hero-challenge-btn" class="btn btn-yellow-play">⚔️ Challenge Now</button>
         </div>
 
-        <div class="tab-header">
+        <!-- Two Challenge Options -->
+        <div class="ch-options-grid">
+          <button id="ch-opt-best-score-btn" class="btn btn-secondary btn-full">⭐ Use Best Score</button>
+          <button id="ch-opt-new-game-btn" class="btn btn-primary btn-full">🎮 New Game</button>
+        </div>
+
+        <!-- Single-row Status Tabs -->
+        <div class="tab-header ch-tab-header">
           <button id="ch-tab-incoming" class="tab-btn active">📥 Incoming <span id="ch-tab-incoming-badge" class="nav-badge hidden">0</span></button>
           <button id="ch-tab-won" class="tab-btn">🏆 Won <span id="ch-tab-won-badge" class="nav-badge hidden">0</span></button>
           <button id="ch-tab-lost" class="tab-btn">❌ Lost / Retry <span id="ch-tab-lost-badge" class="nav-badge hidden">0</span></button>
-          <button id="ch-tab-sent" class="tab-btn">📤 Sent</button>
+          <button id="ch-tab-sent" class="tab-btn">📤 Sent <span id="ch-tab-sent-badge" class="nav-badge hidden">0</span></button>
           <button id="ch-tab-history" class="tab-btn">📜 History</button>
         </div>
 
@@ -296,21 +292,49 @@
       </div>
     </div>
 
-    <!-- Send Challenge Modal -->
+    <!-- Friend Picker Modal (Searchable) -->
+    <div id="friend-picker-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel modal-lg">
+        <button id="close-friend-picker-btn" class="modal-close">&times;</button>
+        <h2>⚔️ SELECT FRIEND</h2>
+        <p class="modal-desc" style="margin-bottom: 12px;">
+          Challenging with score: <strong id="fp-selected-score" style="color: #0284c7; font-size: 1.05rem;">0 pts</strong>
+        </p>
+
+        <div class="friend-picker-search">
+          <input type="text" id="fp-search-input" placeholder="🔍 Search friends by name..." class="input-field" style="margin-bottom: 0;">
+        </div>
+
+        <div id="fp-friends-container" class="friend-picker-list">
+          <!-- Dynamically populated friends list -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge Confirmation Modal -->
     <div id="send-challenge-modal" class="modal-backdrop hidden">
       <div class="modal-card glass-panel text-center">
         <button id="close-send-challenge-btn" class="modal-close">&times;</button>
         <div class="challenge-icon">⚔️</div>
-        <h2>CHALLENGE <span id="send-ch-opponent-name">FRIEND</span></h2>
-        <p class="modal-desc">Challenge your friend to beat this match score!</p>
+        <h2>Challenge <span id="send-ch-opponent-name">Friend</span>?</h2>
+        <p class="modal-desc" style="margin-bottom: 16px;">Send this challenge score to your friend:</p>
         
-        <div class="target-score-card">
-          <span class="lbl">SCORE TO BEAT</span>
-          <span id="send-ch-my-score" class="val">0</span>
+        <div class="target-score-card" style="margin: 16px 0; padding: 14px 10px;">
+          <div style="display: flex; justify-content: space-around; align-items: center;">
+            <div style="text-align: center;">
+              <span class="lbl" style="font-size: 0.72rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;">YOUR SCORE</span>
+              <span id="send-ch-my-score" class="val highlight" style="font-size: 1.4rem; font-weight: 900; color: #0284c7; display: block;">0</span>
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 900; color: #94a3b8; padding: 0 8px;">VS</div>
+            <div style="text-align: center;">
+              <span class="lbl" style="font-size: 0.72rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px;"><span id="send-ch-opponent-shortname">FRIEND</span>'S BEST</span>
+              <span id="send-ch-opponent-best" class="val" style="font-size: 1.4rem; font-weight: 900; color: #0f172a; display: block;">0</span>
+            </div>
+          </div>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="confirm-send-challenge-btn" class="btn btn-yellow-play btn-full">🚀 SEND CHALLENGE</button>
+          <button id="confirm-send-challenge-btn" class="btn btn-yellow-play btn-full">Send Challenge</button>
           <button id="cancel-send-challenge-btn" class="btn btn-secondary btn-full" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
         </div>
       </div>

@@ -45,6 +45,7 @@ class UIManager {
     this.leaderboardModal = document.getElementById('leaderboard-modal');
     this.friendsModal = document.getElementById('friends-modal');
     this.challengesModal = document.getElementById('challenges-modal');
+    this.friendPickerModal = document.getElementById('friend-picker-modal');
     this.sendChallengeModal = document.getElementById('send-challenge-modal');
     this.challengeModal = document.getElementById('challenge-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
@@ -53,6 +54,10 @@ class UIManager {
     this.targetChallengeFriend = null;
     this.targetChallengeScore = 0;
     this.activeChallengeScoreForFriends = null;
+    this.activeChallengeScoreForPicker = 0;
+    this.cachedFriendsForPicker = [];
+    this.cachedChallengesForPicker = [];
+    this.pendingChallengeFromNewGame = false;
     this.lastMatchScore = 0;
 
     // Toasts
@@ -205,9 +210,24 @@ class UIManager {
     document.getElementById('close-friends-btn').addEventListener('click', () => this.closeModal(this.friendsModal));
     document.getElementById('friend-search-btn').addEventListener('click', () => this.handleFriendSearch());
 
-    // Challenges Hub Tabs & Buttons
+    // Challenges Hub Tabs & Actions
     const closeChBtn = document.getElementById('close-challenges-btn');
     if (closeChBtn) closeChBtn.addEventListener('click', () => this.closeModal(this.challengesModal));
+
+    const chHeroBtn = document.getElementById('ch-hero-challenge-btn');
+    if (chHeroBtn) chHeroBtn.addEventListener('click', () => this.openFriendPickerModal());
+
+    const chOptBestBtn = document.getElementById('ch-opt-best-score-btn');
+    if (chOptBestBtn) chOptBestBtn.addEventListener('click', () => this.openFriendPickerModal());
+
+    const chOptNewGameBtn = document.getElementById('ch-opt-new-game-btn');
+    if (chOptNewGameBtn) {
+      chOptNewGameBtn.addEventListener('click', () => {
+        this.closeModal(this.challengesModal);
+        this.pendingChallengeFromNewGame = true;
+        this.launchGame('one-hook');
+      });
+    }
 
     const chTabInc = document.getElementById('ch-tab-incoming');
     if (chTabInc) chTabInc.addEventListener('click', () => this.renderIncomingChallengesTab());
@@ -224,26 +244,13 @@ class UIManager {
     const chTabHist = document.getElementById('ch-tab-history');
     if (chTabHist) chTabHist.addEventListener('click', () => this.renderHistoryChallengesTab());
 
-    // Stat Boxes Clickable Navigation in Challenges Hub
-    const statIncBox = document.getElementById('ch-stat-incoming');
-    if (statIncBox && statIncBox.parentElement) {
-      statIncBox.parentElement.style.cursor = 'pointer';
-      statIncBox.parentElement.addEventListener('click', () => this.renderIncomingChallengesTab());
-    }
-    const statWonBox = document.getElementById('ch-stat-won');
-    if (statWonBox && statWonBox.parentElement) {
-      statWonBox.parentElement.style.cursor = 'pointer';
-      statWonBox.parentElement.addEventListener('click', () => this.renderWonChallengesTab());
-    }
-    const statLostBox = document.getElementById('ch-stat-lost');
-    if (statLostBox && statLostBox.parentElement) {
-      statLostBox.parentElement.style.cursor = 'pointer';
-      statLostBox.parentElement.addEventListener('click', () => this.renderLostChallengesTab());
-    }
-    const statSentBox = document.getElementById('ch-stat-sent');
-    if (statSentBox && statSentBox.parentElement) {
-      statSentBox.parentElement.style.cursor = 'pointer';
-      statSentBox.parentElement.addEventListener('click', () => this.renderSentChallengesTab());
+    // Friend Picker Modal Handlers
+    const closeFpBtn = document.getElementById('close-friend-picker-btn');
+    if (closeFpBtn) closeFpBtn.addEventListener('click', () => this.closeModal(this.friendPickerModal));
+
+    const fpSearchInput = document.getElementById('fp-search-input');
+    if (fpSearchInput) {
+      fpSearchInput.addEventListener('input', (e) => this.filterFriendPicker(e.target.value));
     }
 
     // Send Challenge Modal Handlers
@@ -434,14 +441,16 @@ class UIManager {
         if (reqBadge) reqBadge.classList.add('hidden');
       }
 
-      // Challenges Badge
+      // Challenges Badges
       const incCount = chRes.stats ? (chRes.stats.incomingCount || 0) : 0;
       const wonCount = chRes.stats ? (chRes.stats.wonCount || 0) : 0;
       const lostCount = chRes.stats ? (chRes.stats.lostCount || 0) : 0;
+      const sentCount = chRes.stats ? (chRes.stats.sentCount || 0) : 0;
       const chBadge = document.getElementById('challenges-pending-badge');
       const chTabBadge = document.getElementById('ch-tab-incoming-badge');
       const chTabWonBadge = document.getElementById('ch-tab-won-badge');
       const chTabLostBadge = document.getElementById('ch-tab-lost-badge');
+      const chTabSentBadge = document.getElementById('ch-tab-sent-badge');
 
       if (incCount > 0) {
         if (chBadge) { chBadge.textContent = incCount; chBadge.classList.remove('hidden'); }
@@ -463,16 +472,10 @@ class UIManager {
         if (chTabLostBadge) chTabLostBadge.classList.add('hidden');
       }
 
-      // Update Header Stats in Challenges modal
-      if (chRes.stats) {
-        const statInc = document.getElementById('ch-stat-incoming');
-        const statWon = document.getElementById('ch-stat-won');
-        const statLost = document.getElementById('ch-stat-lost');
-        const statSent = document.getElementById('ch-stat-sent');
-        if (statInc) statInc.textContent = chRes.stats.incomingCount || 0;
-        if (statWon) statWon.textContent = chRes.stats.wonCount || 0;
-        if (statLost) statLost.textContent = chRes.stats.lostCount || 0;
-        if (statSent) statSent.textContent = chRes.stats.sentCount || 0;
+      if (sentCount > 0) {
+        if (chTabSentBadge) { chTabSentBadge.textContent = sentCount; chTabSentBadge.classList.remove('hidden'); }
+      } else {
+        if (chTabSentBadge) chTabSentBadge.classList.add('hidden');
       }
     } catch (e) {}
   }
@@ -983,27 +986,147 @@ class UIManager {
   // CHALLENGES FLOW & MODAL MANAGEMENT
   // =========================================================================
 
+  openFriendPickerModal(score = null) {
+    if (!window.apiClient.user) {
+      this.openAuthModal();
+      return;
+    }
+
+    const scoreToSend = (typeof score === 'number' && score > 0)
+      ? score
+      : (window.apiClient.user.best_score || 0);
+
+    this.activeChallengeScoreForPicker = scoreToSend;
+
+    const scoreEl = document.getElementById('fp-selected-score');
+    if (scoreEl) {
+      scoreEl.textContent = `${scoreToSend.toLocaleString()} pts`;
+    }
+
+    const searchInput = document.getElementById('fp-search-input');
+    if (searchInput) searchInput.value = '';
+
+    this.closeModal(this.challengesModal);
+    this.closeModal(this.gameOverModal);
+    this.openModal(this.friendPickerModal);
+    this.loadFriendsForPicker();
+  }
+
+  async loadFriendsForPicker() {
+    const container = document.getElementById('fp-friends-container');
+    if (!container) return;
+    container.innerHTML = `<div class="loading-spinner">Loading friends...</div>`;
+
+    try {
+      const [friendsRes, chRes] = await Promise.all([
+        window.apiClient.getFriendsList().catch(() => ({ friends: [] })),
+        window.apiClient.getChallengesList().catch(() => ({ challenges: [] }))
+      ]);
+
+      this.cachedFriendsForPicker = friendsRes.friends || [];
+      this.cachedChallengesForPicker = chRes.challenges || [];
+      this.renderFriendPickerList(this.cachedFriendsForPicker);
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load friends: ${err.message}</div>`;
+    }
+  }
+
+  renderFriendPickerList(friends) {
+    const container = document.getElementById('fp-friends-container');
+    if (!container) return;
+
+    if (!friends || friends.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div style="font-size: 2rem; margin-bottom: 8px;">👥</div>
+          <strong style="color: #0f172a;">No friends found!</strong><br>
+          <span style="color: #64748b; font-size: 0.85rem;">Add friends from the Friends tab to challenge them!</span>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    friends.forEach((f) => {
+      const initials = (f.username || 'F').substring(0, 2).toUpperCase();
+      const isPending = this.cachedChallengesForPicker.some(
+        ch => ch.opponent_id === f.id &&
+              ch.challenger_score === this.activeChallengeScoreForPicker &&
+              ch.status === 'PENDING'
+      );
+      const isBeatMe = (f.best_score || 0) > this.activeChallengeScoreForPicker;
+
+      let actionBtnHtml = '';
+      if (isPending) {
+        actionBtnHtml = `<button class="btn btn-sm" disabled style="background: #f1f5f9; color: #94a3b8; border: 1.5px solid #cbd5e1; cursor: not-allowed; opacity: 0.85;">⏳ Pending</button>`;
+      } else if (isBeatMe) {
+        actionBtnHtml = `<button class="btn btn-sm btn-yellow-play" onclick="uiManager.selectFriendToChallenge('${f.id}', '${f.username}', ${f.best_score || 0})">🔥 Beat Me</button>`;
+      } else {
+        actionBtnHtml = `<button class="btn btn-sm btn-challenge" onclick="uiManager.selectFriendToChallenge('${f.id}', '${f.username}', ${f.best_score || 0})">⚔️ Challenge</button>`;
+      }
+
+      html += `
+        <div class="fp-friend-card">
+          <div class="fp-user-info">
+            <div class="fp-avatar">${initials}</div>
+            <div class="fp-details">
+              <span class="fp-name">${f.username}</span>
+              <span class="fp-best-score">Best: <strong>${(f.best_score || 0).toLocaleString()} pts</strong></span>
+            </div>
+          </div>
+          <div>
+            ${actionBtnHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  filterFriendPicker(query) {
+    if (!this.cachedFriendsForPicker) return;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+      this.renderFriendPickerList(this.cachedFriendsForPicker);
+      return;
+    }
+    const filtered = this.cachedFriendsForPicker.filter(f =>
+      (f.username || '').toLowerCase().includes(q)
+    );
+    this.renderFriendPickerList(filtered);
+  }
+
+  selectFriendToChallenge(friendId, friendUsername, friendBestScore) {
+    this.targetChallengeFriend = { id: friendId, username: friendUsername };
+    this.targetChallengeScore = this.activeChallengeScoreForPicker;
+
+    const nameEl = document.getElementById('send-ch-opponent-name');
+    const scoreEl = document.getElementById('send-ch-my-score');
+    const opponentShortEl = document.getElementById('send-ch-opponent-shortname');
+    const opponentBestEl = document.getElementById('send-ch-opponent-best');
+
+    if (nameEl) nameEl.textContent = friendUsername;
+    if (scoreEl) scoreEl.textContent = `${this.activeChallengeScoreForPicker.toLocaleString()} pts`;
+    if (opponentShortEl) opponentShortEl.textContent = friendUsername.toUpperCase();
+    if (opponentBestEl) opponentBestEl.textContent = `${(friendBestScore || 0).toLocaleString()} pts`;
+
+    this.closeModal(this.friendPickerModal);
+    this.openModal(this.sendChallengeModal);
+  }
+
   openSendChallengeModal(friendId, friendUsername, customScore = null) {
     if (!window.apiClient.user) {
       this.openAuthModal();
       return;
     }
 
-    this.targetChallengeFriend = { id: friendId, username: friendUsername };
-
     const scoreToSend = (typeof customScore === 'number' && customScore > 0)
       ? customScore
       : (window.apiClient.user.best_score || 0);
 
-    this.targetChallengeScore = scoreToSend;
-
-    const nameEl = document.getElementById('send-ch-opponent-name');
-    const scoreEl = document.getElementById('send-ch-my-score');
-
-    if (nameEl) nameEl.textContent = friendUsername;
-    if (scoreEl) scoreEl.textContent = `${scoreToSend.toLocaleString()} pts`;
-
-    this.openModal(this.sendChallengeModal);
+    this.activeChallengeScoreForPicker = scoreToSend;
+    this.selectFriendToChallenge(friendId, friendUsername, 0);
   }
 
   async confirmSendChallenge() {
@@ -1017,6 +1140,7 @@ class UIManager {
       this.showToast(res.message || `⚔️ Challenge sent to ${this.targetChallengeFriend.username}!`, 'success');
       this.closeModal(this.sendChallengeModal);
       this.checkPendingNotifications();
+      this.openChallengesModal('sent');
     } catch (err) {
       this.showToast(err.message || 'Failed to send challenge', 'error');
     } finally {
@@ -1028,6 +1152,11 @@ class UIManager {
     if (!window.apiClient.user) {
       this.openAuthModal();
       return;
+    }
+
+    const heroScoreEl = document.getElementById('ch-hero-score');
+    if (heroScoreEl) {
+      heroScoreEl.textContent = (window.apiClient.user.best_score || 0).toLocaleString();
     }
 
     this.openModal(this.challengesModal);
@@ -1461,7 +1590,10 @@ class UIManager {
     if (goChFriendsBtn) {
       if (data.score > 0) {
         goChFriendsBtn.classList.remove('hidden');
-        goChFriendsBtn.textContent = `⚔️ Challenge Friends with this Match (${data.score.toLocaleString()} pts)`;
+        goChFriendsBtn.textContent = `⚔️ Challenge Friends (${data.score.toLocaleString()} pts)`;
+        goChFriendsBtn.onclick = () => {
+          this.openFriendPickerModal(data.score);
+        };
       } else {
         goChFriendsBtn.classList.add('hidden');
       }
@@ -1500,6 +1632,15 @@ class UIManager {
     } else {
       if (retryBtn) retryBtn.classList.add('hidden');
       chBanner.classList.add('hidden');
+    }
+
+    // If game was launched from "New Game" in Challenges Hub, immediately prompt Friend Picker!
+    if (this.pendingChallengeFromNewGame) {
+      this.pendingChallengeFromNewGame = false;
+      if (data.score > 0) {
+        this.openFriendPickerModal(data.score);
+        return;
+      }
     }
 
     this.openModal(this.gameOverModal);

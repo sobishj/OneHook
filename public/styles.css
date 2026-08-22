@@ -1160,72 +1160,152 @@ html, body {
 /* ==========================================================================
    CHALLENGES HUB STYLES
    ========================================================================== */
-.challenge-stats-grid {
+
+/* Hero Section Card */
+.ch-hero-card {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-radius: 16px;
+  padding: 16px 20px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+
+.ch-hero-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ch-hero-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #bae6fd;
+  margin-bottom: 2px;
+}
+
+.ch-hero-score-val {
+  font-family: var(--font-heading);
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Two Challenge Options */
+.ch-options-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-bottom: 18px;
 }
 
-.ch-stat-box {
-  background: #f0f9ff;
-  border: 1.5px solid #bae6fd;
-  border-radius: 14px;
-  padding: 10px 6px;
-  text-align: center;
+/* Single-row Tab Header */
+.ch-tab-header {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 6px;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+}
+
+.ch-tab-header::-webkit-scrollbar {
+  display: none;
+}
+
+.ch-tab-header .tab-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Friend Picker Styles */
+.friend-picker-search {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #ffffff;
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+}
+
+.friend-picker-list {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.fp-friend-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.fp-friend-card:hover {
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+}
+
+.fp-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fp-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
 }
 
-.ch-stat-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+.fp-details {
+  display: flex;
+  flex-direction: column;
 }
 
-.ch-stat-box.highlight-won {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
-}
-
-.ch-stat-box.highlight-won .ch-stat-num {
-  color: #059669;
-}
-
-.ch-stat-box.highlight-lost {
-  background: #fff1f2;
-  border-color: #fecaca;
-}
-
-.ch-stat-box.highlight-lost .ch-stat-num {
-  color: #e11d48;
-}
-
-.ch-stat-box.highlight {
-  background: #fef3c7;
-  border-color: #fde68a;
-}
-
-.ch-stat-num {
+.fp-name {
   font-family: var(--font-heading);
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: #0284c7;
-  line-height: 1.1;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
-.ch-stat-box.highlight .ch-stat-num {
-  color: #d97706;
-}
-
-.ch-stat-label {
-  font-size: 0.68rem;
-  font-weight: 700;
+.fp-best-score {
+  font-size: 0.75rem;
   color: #64748b;
-  margin-top: 2px;
-  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.fp-best-score strong {
+  color: #0284c7;
 }
 
 .challenge-list {
@@ -1648,13 +1728,18 @@ html, body {
 
   /* Tabs & Lists */
   .tab-header {
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 6px;
   }
 
   .tab-btn {
-    padding: 8px;
-    font-size: 0.75rem;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .friend-card {
@@ -1662,7 +1747,31 @@ html, body {
   }
   
   .btn-sm {
-    padding: 4px 8px;
-    font-size: 0.75rem;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    max-width: 100%;
+    width: 100%;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    max-height: 90vh;
+    padding: 24px 18px 30px;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-card.modal-lg {
+    max-width: 620px;
   }
 }
