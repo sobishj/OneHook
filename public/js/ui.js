@@ -1456,8 +1456,9 @@ class UIManager {
                 </span>
               </div>
             </div>
-            <div class="ch-details-row" style="margin-top: 4px;">
+            <div class="ch-details-row" style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
               ${statusTagHtml}
+              ${!hasAttempted ? `<button class="btn btn-sm btn-danger" style="padding: 5px 12px; font-size: 0.75rem; border-radius: 8px;" onclick="uiManager.withdrawChallenge('${ch.id}', '${ch.opponentUsername}')">↩️ Withdraw</button>` : ''}
             </div>
           </div>
         `;
@@ -1466,6 +1467,21 @@ class UIManager {
       container.innerHTML = html;
     } catch (err) {
       container.innerHTML = `<div class="error-state">Failed to load sent challenges: ${err.message}</div>`;
+    }
+  }
+
+  async withdrawChallenge(challengeId, opponentUsername) {
+    if (!confirm(`Are you sure you want to withdraw the challenge sent to ${opponentUsername}?`)) {
+      return;
+    }
+
+    try {
+      const res = await window.apiClient.withdrawChallenge(challengeId);
+      this.showToast(res.message || 'Challenge withdrawn successfully', 'info');
+      this.checkPendingNotifications();
+      this.renderSentChallengesTab();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to withdraw challenge', 'error');
     }
   }
 

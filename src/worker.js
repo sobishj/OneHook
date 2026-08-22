@@ -818,6 +818,42 @@ export default {
         });
       }
 
+      // POST /api/challenges/withdraw
+      if (pathname === '/api/challenges/withdraw' && method === 'POST') {
+        const authUser = verifyToken(request, env);
+        if (!authUser) {
+          return jsonResponse({ error: 'Authentication token required' }, 401);
+        }
+        const userId = authUser.id;
+
+        const body = await request.json().catch(() => ({}));
+        const { challengeId } = body;
+
+        if (!challengeId) {
+          return jsonResponse({ error: 'Challenge ID required' }, 400);
+        }
+
+        const challenge = await env.DB.prepare(`SELECT * FROM challenges WHERE id = ?`).bind(challengeId).first();
+        if (!challenge) {
+          return jsonResponse({ error: 'Challenge not found' }, 404);
+        }
+
+        if (challenge.challenger_id !== userId) {
+          return jsonResponse({ error: 'You can only withdraw challenges you sent' }, 403);
+        }
+
+        if (challenge.opponent_score !== null && challenge.opponent_score !== undefined) {
+          return jsonResponse({ error: 'Cannot withdraw challenge after friend has already played it' }, 400);
+        }
+
+        await env.DB.prepare(`DELETE FROM challenges WHERE id = ? AND challenger_id = ?`).bind(challengeId, userId).run();
+
+        return jsonResponse({
+          success: true,
+          message: '↩️ Challenge withdrawn successfully!'
+        });
+      }
+
       // POST /api/challenges/complete
       if (pathname === '/api/challenges/complete' && method === 'POST') {
         const authUser = verifyToken(request, env);

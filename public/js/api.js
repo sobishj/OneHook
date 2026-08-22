@@ -159,6 +159,13 @@ class ApiClient {
       body: JSON.stringify({ challengeId, scoreAchieved })
     });
   }
+
+  async withdrawChallenge(challengeId) {
+    return this.request('/api/challenges/withdraw', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId })
+    });
+  }
 }
 
 window.apiClient = new ApiClient();
