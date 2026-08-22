@@ -276,6 +276,7 @@ class GameEngine {
     if (this.level === 2) return 150;
     if (this.level === 3) return 300;
     if (this.level === 4) return 500;
+    if (this.level === 5) return 1000;
     return null;
   }
 
@@ -314,6 +315,10 @@ class GameEngine {
     if (this.level >= 5) {
       availableKeys.push('golden_fish', 'jellyfish', 'whale');
     }
+    if (this.level >= 6) {
+      // Level 6 (1000+ pts): Whale Kingdom - Giant Whales and Orcas dominate the trench!
+      availableKeys.push('whale', 'orca', 'humpback_whale', 'blue_whale', 'golden_whale');
+    }
 
     const key = availableKeys[Math.floor(Math.random() * availableKeys.length)];
     const config = FISH_SPECIES_CONFIGS[key];
@@ -336,7 +341,9 @@ class GameEngine {
   checkLevelUp() {
     let newLevel = 1;
 
-    if (this.score >= 500) {
+    if (this.score >= 1000) {
+      newLevel = 6;
+    } else if (this.score >= 500) {
       newLevel = 5;
     } else if (this.score >= 300) {
       newLevel = 4;
@@ -348,7 +355,7 @@ class GameEngine {
 
     if (newLevel > this.level) {
       this.level = newLevel;
-      this.levelName = `LEVEL ${this.level}`;
+      this.levelName = this.level === 6 ? 'LEVEL 6 - WHALE REALM' : `LEVEL ${this.level}`;
       this.maxFishCount = 6 + (this.level - 1);
       window.soundManager.playLevelUp();
 
@@ -701,6 +708,11 @@ class GameEngine {
         grad.addColorStop(0, '#075985');
         grad.addColorStop(0.5, '#0c4a6e');
         grad.addColorStop(1, '#082f49');
+        break;
+      case 6: // Level 6: 1000+ pts - Leviathan Trench / Bioluminescent Whale Realm
+        grad.addColorStop(0, '#1e1b4b');
+        grad.addColorStop(0.45, '#0f172a');
+        grad.addColorStop(1, '#020617');
         break;
       default:
         grad.addColorStop(0, '#7dd3fc');

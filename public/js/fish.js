@@ -13,8 +13,8 @@ class Fish {
     this.level = config.level || 1;
     this.isErratic = config.isErratic || false;
 
-    // Speed scales dynamically with level: gentle at level 1, increasing with each level
-    const levelScale = 1 + (this.level - 1) * 0.35;
+    // Speed scales dynamically with level: gentle at level 1, accelerating sharply at Level 6 (1000+ pts) where whales rule the sea!
+    const levelScale = 1 + (this.level - 1) * (this.level >= 6 ? 0.52 : 0.35);
     // Gentle & calm initial speeds like earlier version
     const isMobile = (config.canvasWidth && config.canvasWidth < 768) || (typeof window !== 'undefined' && window.innerWidth < 768);
     const mobileBoost = isMobile ? 1.35 : 1.0;
@@ -47,7 +47,7 @@ class Fish {
 
   updateLevel(newLevel) {
     this.level = newLevel;
-    const levelScale = 1 + (this.level - 1) * 0.35;
+    const levelScale = 1 + (this.level - 1) * (this.level >= 6 ? 0.52 : 0.35);
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const mobileBoost = isMobile ? 1.35 : 1.0;
     this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
@@ -221,7 +221,17 @@ class Fish {
         this.drawGoldenFish(ctx, w, h, tailWiggle);
         break;
       case 'whale':
+      case 'blue_whale':
         this.drawWhale(ctx, w, h, tailWiggle);
+        break;
+      case 'orca':
+        this.drawOrca(ctx, w, h, tailWiggle);
+        break;
+      case 'humpback_whale':
+        this.drawHumpbackWhale(ctx, w, h, tailWiggle);
+        break;
+      case 'golden_whale':
+        this.drawGoldenWhale(ctx, w, h, tailWiggle);
         break;
       default:
         this.drawClownfish(ctx, w, h, tailWiggle);
@@ -918,9 +928,160 @@ class Fish {
     ctx.arc(w * 0.3, -h * 0.1, 1.2, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  drawOrca(ctx, w, h, tailWiggle) {
+    // 1. Tall Dorsal Fin
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.02, -h * 0.4);
+    ctx.lineTo(w * 0.05, -h * 0.95);
+    ctx.lineTo(w * 0.18, -h * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Tail Fluke
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, -h * 0.7);
+    ctx.lineTo(-w * 0.46 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.55 + tailWiggle, h * 0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Glossy Black Body
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.38, 0);
+    ctx.bezierCurveTo(-w * 0.25, -h * 0.5, w * 0.28, -h * 0.45, w * 0.48, 0);
+    ctx.bezierCurveTo(w * 0.28, h * 0.45, -w * 0.25, h * 0.5, -w * 0.38, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 4. White Belly Patch
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.2, h * 0.15);
+    ctx.bezierCurveTo(-w * 0.05, h * 0.4, w * 0.25, h * 0.35, w * 0.42, 0);
+    ctx.bezierCurveTo(w * 0.25, h * 0.1, 0, h * 0.08, -w * 0.2, h * 0.15);
+    ctx.closePath();
+    ctx.fill();
+
+    // 5. Iconic White Eye Patch
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(w * 0.24, -h * 0.14, 9, 4.5, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 6. Eye
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(w * 0.34, -h * 0.05, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawHumpbackWhale(ctx, w, h, tailWiggle) {
+    // 1. Long Wing-like Pectoral Fins
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(w * 0.05, h * 0.2);
+    ctx.lineTo(-w * 0.08, h * 0.95);
+    ctx.lineTo(w * 0.15, h * 0.3);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Tail Fluke with scalloped edge
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.lineTo(-w * 0.58 + tailWiggle, -h * 0.85);
+    ctx.lineTo(-w * 0.48 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.58 + tailWiggle, h * 0.85);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Massive Humpback Body
+    const humpGrad = ctx.createLinearGradient(0, -h * 0.45, 0, h * 0.45);
+    humpGrad.addColorStop(0, '#0f172a');
+    humpGrad.addColorStop(0.5, '#1e293b');
+    humpGrad.addColorStop(1, '#64748b');
+
+    ctx.fillStyle = humpGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.bezierCurveTo(-w * 0.22, -h * 0.55, w * 0.25, -h * 0.45, w * 0.48, 0.05);
+    ctx.bezierCurveTo(w * 0.25, h * 0.5, -w * 0.22, h * 0.5, -w * 0.4, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 4. White Pleated Throat Grooves
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    for (let i = -1; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(w * 0.05, h * (0.15 + i * 0.07));
+      ctx.quadraticCurveTo(w * 0.25, h * (0.2 + i * 0.06), w * 0.42, h * (0.05 + i * 0.03));
+      ctx.stroke();
+    }
+
+    // 5. Eye & Knobs (Tubercles)
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(w * 0.36, -h * 0.06, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.34, -h * 0.08, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawGoldenWhale(ctx, w, h, tailWiggle) {
+    // 1. Radiant Glowing Golden Tail
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.lineTo(-w * 0.58 + tailWiggle, -h * 0.9);
+    ctx.lineTo(-w * 0.48 + tailWiggle * 0.5, 0);
+    ctx.lineTo(-w * 0.58 + tailWiggle, h * 0.9);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Colossal Golden Body
+    const goldWhaleGrad = ctx.createLinearGradient(0, -h * 0.5, 0, h * 0.5);
+    goldWhaleGrad.addColorStop(0, '#fef08a');
+    goldWhaleGrad.addColorStop(0.35, '#f59e0b');
+    goldWhaleGrad.addColorStop(0.7, '#d97706');
+    goldWhaleGrad.addColorStop(1, '#b45309');
+
+    ctx.fillStyle = goldWhaleGrad;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.4, 0);
+    ctx.bezierCurveTo(-w * 0.22, -h * 0.58, w * 0.28, -h * 0.5, w * 0.48, 0);
+    ctx.bezierCurveTo(w * 0.28, h * 0.5, -w * 0.22, h * 0.58, -w * 0.4, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // 3. Shimmer Line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.2, -h * 0.15);
+    ctx.quadraticCurveTo(w * 0.15, -h * 0.2, w * 0.4, -h * 0.05);
+    ctx.stroke();
+
+    // 4. Glowing Eye
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(w * 0.34, -h * 0.08, 4.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(w * 0.34, -h * 0.08, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
-// Fish Factory Configs for Stages 1-5
+// Fish Factory Configs for Stages 1-6
 const FISH_SPECIES_CONFIGS = {
   // Stage 1 (Smooth & Gentle starting speeds)
   clownfish: { species: 'clownfish', stage: 1, points: 2, width: 44, height: 26, speed: 1.3 },
@@ -942,7 +1103,13 @@ const FISH_SPECIES_CONFIGS = {
   // Stage 5
   golden_fish: { species: 'golden_fish', stage: 5, points: 75, width: 65, height: 35, speed: 3.8 },
   jellyfish: { species: 'jellyfish', stage: 5, points: 60, width: 55, height: 60, speed: 1.4 },
-  whale: { species: 'whale', stage: 5, points: 100, width: 150, height: 75, speed: 1.6 }
+  whale: { species: 'whale', stage: 5, points: 100, width: 150, height: 75, speed: 1.8 },
+
+  // Stage 6 (1000+ pts - Leviathan Trench / Whale Realm: Faster & High-Yield Giant Whales!)
+  orca: { species: 'orca', stage: 6, points: 150, width: 155, height: 72, speed: 2.8 },
+  humpback_whale: { species: 'humpback_whale', stage: 6, points: 180, width: 170, height: 80, speed: 2.3 },
+  blue_whale: { species: 'blue_whale', stage: 6, points: 200, width: 185, height: 85, speed: 2.0 },
+  golden_whale: { species: 'golden_whale', stage: 6, points: 300, width: 190, height: 88, speed: 3.2 }
 };
 
 window.Fish = Fish;
