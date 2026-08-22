@@ -15,9 +15,9 @@ class Fish {
 
     // Speed scales dynamically with level: gentle at level 1, increasing with each level
     const levelScale = 1 + (this.level - 1) * 0.35;
-    // On mobile / iPhone screens, boost speed significantly so fish swim with lively pace across narrow portrait screens
+    // Gentle & calm initial speeds like earlier version
     const isMobile = (config.canvasWidth && config.canvasWidth < 768) || (typeof window !== 'undefined' && window.innerWidth < 768);
-    const mobileBoost = isMobile ? 2.4 : 1.3;
+    const mobileBoost = isMobile ? 1.35 : 1.0;
     this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
 
     // Spatial properties
@@ -30,7 +30,7 @@ class Fish {
     this.vy = 0;
 
     this.swimPhase = Math.random() * Math.PI * 2;
-    this.swimSpeed = 0.16 + (this.baseSpeed * 0.025);
+    this.swimSpeed = 0.11 + (this.baseSpeed * 0.02);
 
     this.isCaught = false;
     this.strugglePhase = 0;
@@ -49,10 +49,10 @@ class Fish {
     this.level = newLevel;
     const levelScale = 1 + (this.level - 1) * 0.35;
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const mobileBoost = isMobile ? 2.4 : 1.3;
+    const mobileBoost = isMobile ? 1.35 : 1.0;
     this.baseSpeed = this.rawSpeed * levelScale * mobileBoost;
     this.vx = (this.isTurning ? this.facingScaleX : this.direction) * (this.baseSpeed + Math.random() * 0.3);
-    this.swimSpeed = 0.16 + (this.baseSpeed * 0.025);
+    this.swimSpeed = 0.11 + (this.baseSpeed * 0.02);
   }
 
   scare(scareX, canvasHeight) {

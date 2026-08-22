@@ -23,8 +23,8 @@ class GameEngine {
       y: initialStartY,
       startY: initialStartY,
       maxDepth: this.height * 0.85,
-      speed: this.width < 768 ? 16 : 14,
-      reelSpeed: this.width < 768 ? 20 : 18,
+      speed: 13,
+      reelSpeed: 17,
       state: 'IDLE', // 'IDLE', 'DROPPING', 'RETRACTING', 'CAUGHT'
       caughtFish: null
     };
