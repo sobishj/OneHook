@@ -317,7 +317,7 @@
         <button id="close-send-challenge-btn" class="modal-close">&times;</button>
         <div class="challenge-icon">⚔️</div>
         <h2>Challenge <span id="send-ch-opponent-name">Friend</span>?</h2>
-        <p class="modal-desc" style="margin-bottom: 16px;">Send this challenge score to your friend:</p>
+        <p class="modal-desc" style="margin-bottom: 16px;">Choose how you want to challenge your friend:</p>
         
         <div class="target-score-card" style="margin: 16px 0; padding: 14px 10px;">
           <div style="display: flex; justify-content: space-around; align-items: center;">
@@ -333,9 +333,10 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="confirm-send-challenge-btn" class="btn btn-yellow-play btn-full">Send Challenge</button>
-          <button id="cancel-send-challenge-btn" class="btn btn-secondary btn-full" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+          <button id="confirm-send-challenge-btn" class="btn btn-yellow-play btn-full">⭐ Challenge with Score (<span id="send-ch-btn-score-val">0 pts</span>)</button>
+          <button id="send-ch-new-game-btn" class="btn btn-primary btn-full">🎮 Play New Game to Challenge</button>
+          <button id="cancel-send-challenge-btn" class="btn btn-secondary btn-full" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b; margin-top: 2px;">Cancel</button>
         </div>
       </div>
     </div>

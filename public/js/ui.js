@@ -58,6 +58,7 @@ class UIManager {
     this.cachedFriendsForPicker = [];
     this.cachedChallengesForPicker = [];
     this.pendingChallengeFromNewGame = false;
+    this.pendingChallengeTargetFriend = null;
     this.lastMatchScore = 0;
 
     // Toasts
@@ -262,6 +263,19 @@ class UIManager {
 
     const confirmSendChBtn = document.getElementById('confirm-send-challenge-btn');
     if (confirmSendChBtn) confirmSendChBtn.addEventListener('click', () => this.confirmSendChallenge());
+
+    const sendChNewGameBtn = document.getElementById('send-ch-new-game-btn');
+    if (sendChNewGameBtn) {
+      sendChNewGameBtn.addEventListener('click', () => {
+        if (!this.targetChallengeFriend) return;
+        this.pendingChallengeTargetFriend = {
+          id: this.targetChallengeFriend.id,
+          username: this.targetChallengeFriend.username
+        };
+        this.closeModal(this.sendChallengeModal);
+        this.launchGame('one-hook');
+      });
+    }
 
     // Retry Challenge from Game Over Modal
     const retryChBtn = document.getElementById('retry-challenge-btn');
@@ -1105,11 +1119,13 @@ class UIManager {
     const scoreEl = document.getElementById('send-ch-my-score');
     const opponentShortEl = document.getElementById('send-ch-opponent-shortname');
     const opponentBestEl = document.getElementById('send-ch-opponent-best');
+    const btnScoreValEl = document.getElementById('send-ch-btn-score-val');
 
     if (nameEl) nameEl.textContent = friendUsername;
     if (scoreEl) scoreEl.textContent = `${this.activeChallengeScoreForPicker.toLocaleString()} pts`;
     if (opponentShortEl) opponentShortEl.textContent = friendUsername.toUpperCase();
     if (opponentBestEl) opponentBestEl.textContent = `${(friendBestScore || 0).toLocaleString()} pts`;
+    if (btnScoreValEl) btnScoreValEl.textContent = `${this.activeChallengeScoreForPicker.toLocaleString()} pts`;
 
     this.closeModal(this.friendPickerModal);
     this.openModal(this.sendChallengeModal);
@@ -1632,6 +1648,22 @@ class UIManager {
     } else {
       if (retryBtn) retryBtn.classList.add('hidden');
       chBanner.classList.add('hidden');
+    }
+
+    // If game was launched to challenge a specific friend from confirmation modal:
+    if (this.pendingChallengeTargetFriend) {
+      const targetFriend = this.pendingChallengeTargetFriend;
+      this.pendingChallengeTargetFriend = null;
+      if (data.score > 0) {
+        window.apiClient.createChallenge(targetFriend.id, data.score)
+          .then((res) => {
+            this.showToast(res.message || `⚔️ Challenge sent to ${targetFriend.username} with ${data.score.toLocaleString()} pts!`, 'success');
+            this.checkPendingNotifications();
+          })
+          .catch((err) => {
+            this.showToast(err.message || 'Failed to send challenge', 'error');
+          });
+      }
     }
 
     // If game was launched from "New Game" in Challenges Hub, immediately prompt Friend Picker!
