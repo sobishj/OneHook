@@ -172,10 +172,61 @@
         <div id="auth-step-profile" class="hidden">
           <h2>👤 Player Profile</h2>
           <div class="profile-card">
-            <span class="profile-card-lbl">LOGGED IN AS</span>
-            <span id="profile-username-display" class="profile-username">Ethan</span>
-            <span id="profile-email-display" class="profile-email">ethan@example.com</span>
+            <!-- Username Section -->
+            <div class="profile-section-item">
+              <span class="profile-card-lbl">USERNAME</span>
+              <div class="profile-field-row">
+                <span id="profile-username-display" class="profile-username">Ethan</span>
+                <button id="btn-edit-username" class="profile-edit-btn">✏️ Change</button>
+              </div>
+
+              <!-- Inline Edit Username Box -->
+              <div id="profile-edit-username-box" class="profile-edit-box hidden">
+                <label style="font-size: 0.72rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px;">NEW USERNAME</label>
+                <input type="text" id="profile-new-username-input" placeholder="Enter new username (3-20 chars)" maxlength="20" autocomplete="off">
+                <div style="display: flex; gap: 8px;">
+                  <button id="btn-save-username" class="btn btn-sm btn-primary" style="flex: 1;">Save Username</button>
+                  <button id="btn-cancel-edit-username" class="btn btn-sm btn-secondary" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email Section -->
+            <div class="profile-section-item">
+              <span class="profile-card-lbl">EMAIL ADDRESS</span>
+              <div class="profile-field-row">
+                <span id="profile-email-display" class="profile-email">e****@e****.com</span>
+                <button id="btn-edit-email" class="profile-edit-btn">✏️ Change</button>
+              </div>
+
+              <!-- Inline Edit Email Box -->
+              <div id="profile-edit-email-box" class="profile-edit-box hidden">
+                <!-- Step 1: Request Email Change -->
+                <div id="profile-email-step-input">
+                  <label style="font-size: 0.72rem; color: #64748b; font-weight: 700; display: block; margin-bottom: 4px;">NEW EMAIL ADDRESS</label>
+                  <input type="email" id="profile-new-email-input" placeholder="Enter new email address..." autocomplete="email">
+                  <div style="display: flex; gap: 8px;">
+                    <button id="btn-send-email-otp" class="btn btn-sm btn-primary" style="flex: 1;">Send Verification Code</button>
+                    <button id="btn-cancel-edit-email" class="btn btn-sm btn-secondary" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
+                  </div>
+                </div>
+
+                <!-- Step 2: Verify OTP for Email Change -->
+                <div id="profile-email-step-otp" class="hidden">
+                  <p style="font-size: 0.78rem; color: #0284c7; margin-bottom: 6px; font-weight: 600;">
+                    Code sent to <strong id="profile-new-email-masked">n***@e***.com</strong>
+                  </p>
+                  <input type="text" id="profile-email-otp-input" placeholder="_ _ _ _ _ _" maxlength="6" class="otp-input" autocomplete="one-time-code" style="text-align: center; letter-spacing: 4px; font-size: 1.1rem; font-weight: 800;">
+                  <div style="display: flex; gap: 6px; margin-top: 6px;">
+                    <button id="btn-verify-new-email" class="btn btn-sm btn-success" style="flex: 1;">Verify & Save</button>
+                    <button id="btn-resend-new-email-otp" class="btn btn-sm btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;">🔄</button>
+                    <button id="btn-cancel-email-otp" class="btn btn-sm btn-secondary" style="background: transparent; border: 1.5px solid #cbd5e1; color: #64748b;">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
           <div class="profile-best-box">
             <span class="profile-card-lbl">PERSONAL BEST</span>
             <span id="profile-best-score-display" class="profile-best-val">0</span>

@@ -371,6 +371,156 @@ export default {
         return jsonResponse({ user });
       }
 
+      // POST /api/user/update-username
+      if (pathname === '/api/user/update-username' && method === 'POST') {
+        const authUser = verifyToken(request, env);
+        if (!authUser) {
+          return jsonResponse({ error: 'Authentication token required' }, 401);
+        }
+
+        const body = await request.json().catch(() => ({}));
+        const { username } = body;
+
+        const cleanUsername = (username || '').trim();
+        if (!cleanUsername || cleanUsername.length < 3 || cleanUsername.length > 20) {
+          return jsonResponse({ error: 'Username must be between 3 and 20 characters.' }, 400);
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(cleanUsername)) {
+          return jsonResponse({ error: 'Username can only contain letters, numbers, and underscores.' }, 400);
+        }
+
+        const existing = await env.DB.prepare(`SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND id != ?`).bind(cleanUsername, authUser.id).first();
+        if (existing) {
+          return jsonResponse({ error: `Username "${cleanUsername}" is already taken. Please choose another.` }, 400);
+        }
+
+        await env.DB.prepare(`UPDATE users SET username = ? WHERE id = ?`).bind(cleanUsername, authUser.id).run();
+
+        const user = await env.DB.prepare(`SELECT id, username, email, best_score FROM users WHERE id = ?`).bind(authUser.id).first();
+
+        const token = jwt.sign(
+          { id: user.id, username: user.username, email: user.email },
+          getJwtSecret(env),
+          { expiresIn: '30d' }
+        );
+
+        return jsonResponse({
+          success: true,
+          message: `Username updated to ${cleanUsername}!`,
+          token,
+          user
+        });
+      }
+
+      // POST /api/user/request-email-change
+      if (pathname === '/api/user/request-email-change' && method === 'POST') {
+        const authUser = verifyToken(request, env);
+        if (!authUser) {
+          return jsonResponse({ error: 'Authentication token required' }, 401);
+        }
+
+        const body = await request.json().catch(() => ({}));
+        const { newEmail } = body;
+
+        const cleanEmail = (newEmail || '').trim().toLowerCase();
+        if (!cleanEmail || !isValidEmail(cleanEmail)) {
+          return jsonResponse({ error: 'Please enter a valid email address.' }, 400);
+        }
+
+        const currentUser = await env.DB.prepare(`SELECT id, username, email FROM users WHERE id = ?`).bind(authUser.id).first();
+        if (!currentUser) {
+          return jsonResponse({ error: 'User not found' }, 404);
+        }
+
+        if (cleanEmail === currentUser.email.toLowerCase()) {
+          return jsonResponse({ error: 'This is already your current email address.' }, 400);
+        }
+
+        const existing = await env.DB.prepare(`SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?`).bind(cleanEmail, authUser.id).first();
+        if (existing) {
+          return jsonResponse({ error: 'This email address is already registered to another account.' }, 400);
+        }
+
+        const otp = generateOTP();
+        const expiresAt = Date.now() + 10 * 60 * 1000;
+        await env.DB.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)`)
+          .bind(cleanEmail, otp, expiresAt).run();
+
+        const emailResult = await sendVerificationEmail({
+          email: cleanEmail,
+          username: currentUser.username,
+          code: otp,
+          env
+        });
+
+        if (!emailResult.success) {
+          return jsonResponse({ error: emailResult.error }, 500);
+        }
+
+        return jsonResponse({
+          success: true,
+          message: `Verification code sent to ${maskEmail(cleanEmail)}!`,
+          newEmail: cleanEmail,
+          maskedEmail: maskEmail(cleanEmail)
+        });
+      }
+
+      // POST /api/user/verify-email-change
+      if (pathname === '/api/user/verify-email-change' && method === 'POST') {
+        const authUser = verifyToken(request, env);
+        if (!authUser) {
+          return jsonResponse({ error: 'Authentication token required' }, 401);
+        }
+
+        const body = await request.json().catch(() => ({}));
+        const { newEmail, code } = body;
+
+        const cleanEmail = (newEmail || '').trim().toLowerCase();
+        const cleanCode = (code || '').trim();
+
+        if (!cleanEmail || !cleanCode) {
+          return jsonResponse({ error: 'New email and verification code are required.' }, 400);
+        }
+
+        const otpRecord = await env.DB.prepare(`SELECT * FROM otp_codes WHERE email = ?`).bind(cleanEmail).first();
+        if (!otpRecord) {
+          return jsonResponse({ error: 'No verification request found for this email.' }, 400);
+        }
+
+        if (Date.now() > otpRecord.expires_at) {
+          return jsonResponse({ error: 'Verification code has expired. Please request a new one.' }, 400);
+        }
+
+        if (otpRecord.code !== cleanCode) {
+          return jsonResponse({ error: 'Invalid verification code.' }, 400);
+        }
+
+        const existing = await env.DB.prepare(`SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?`).bind(cleanEmail, authUser.id).first();
+        if (existing) {
+          return jsonResponse({ error: 'This email address is already registered to another account.' }, 400);
+        }
+
+        await env.DB.prepare(`UPDATE users SET email = ?, email_verified = 1 WHERE id = ?`).bind(cleanEmail, authUser.id).run();
+        await env.DB.prepare(`DELETE FROM otp_codes WHERE email = ?`).bind(cleanEmail).run();
+
+        const user = await env.DB.prepare(`SELECT id, username, email, best_score FROM users WHERE id = ?`).bind(authUser.id).first();
+
+        const token = jwt.sign(
+          { id: user.id, username: user.username, email: user.email },
+          getJwtSecret(env),
+          { expiresIn: '30d' }
+        );
+
+        return jsonResponse({
+          success: true,
+          message: 'Email successfully updated!',
+          token,
+          user,
+          maskedEmail: maskEmail(cleanEmail)
+        });
+      }
+
       // ----------------------------------------------------
       // SCORE & LEADERBOARD ROUTES
       // ----------------------------------------------------

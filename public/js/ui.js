@@ -50,7 +50,9 @@ class UIManager {
     this.challengeModal = document.getElementById('challenge-modal');
     this.gameOverModal = document.getElementById('game-over-modal');
 
-    // Target friend and score for sending a challenge
+    // Target friend and score
+    this.pendingEmail = null;
+    this.pendingNewEmail = null;
     this.targetChallengeFriend = null;
     this.targetChallengeScore = 0;
     this.activeChallengeScoreForFriends = null;
@@ -197,6 +199,114 @@ class UIManager {
     const resendBtn = document.getElementById('otp-resend-btn');
     if (resendBtn) {
       resendBtn.addEventListener('click', () => this.handleResendOtp());
+    }
+
+    // Profile Edit Listeners (Username & Email Change)
+    const btnEditUsername = document.getElementById('btn-edit-username');
+    if (btnEditUsername) {
+      btnEditUsername.addEventListener('click', () => {
+        const box = document.getElementById('profile-edit-username-box');
+        const input = document.getElementById('profile-new-username-input');
+        if (box) {
+          const isHidden = box.classList.contains('hidden');
+          if (isHidden) {
+            box.classList.remove('hidden');
+            if (input && window.apiClient.user) input.value = window.apiClient.user.username;
+            setTimeout(() => input && input.focus(), 50);
+          } else {
+            box.classList.add('hidden');
+          }
+        }
+        const emailBox = document.getElementById('profile-edit-email-box');
+        if (emailBox) emailBox.classList.add('hidden');
+      });
+    }
+
+    const btnCancelEditUsername = document.getElementById('btn-cancel-edit-username');
+    if (btnCancelEditUsername) {
+      btnCancelEditUsername.addEventListener('click', () => {
+        const box = document.getElementById('profile-edit-username-box');
+        if (box) box.classList.add('hidden');
+      });
+    }
+
+    const btnSaveUsername = document.getElementById('btn-save-username');
+    if (btnSaveUsername) {
+      btnSaveUsername.addEventListener('click', () => this.handleSaveUsername());
+    }
+
+    const newUsernameInput = document.getElementById('profile-new-username-input');
+    if (newUsernameInput) {
+      newUsernameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleSaveUsername();
+      });
+    }
+
+    const btnEditEmail = document.getElementById('btn-edit-email');
+    if (btnEditEmail) {
+      btnEditEmail.addEventListener('click', () => {
+        const box = document.getElementById('profile-edit-email-box');
+        const input = document.getElementById('profile-new-email-input');
+        if (box) {
+          const isHidden = box.classList.contains('hidden');
+          if (isHidden) {
+            box.classList.remove('hidden');
+            document.getElementById('profile-email-step-input').classList.remove('hidden');
+            document.getElementById('profile-email-step-otp').classList.add('hidden');
+            if (input) input.value = '';
+            setTimeout(() => input && input.focus(), 50);
+          } else {
+            box.classList.add('hidden');
+          }
+        }
+        const usernameBox = document.getElementById('profile-edit-username-box');
+        if (usernameBox) usernameBox.classList.add('hidden');
+      });
+    }
+
+    const btnCancelEditEmail = document.getElementById('btn-cancel-edit-email');
+    if (btnCancelEditEmail) {
+      btnCancelEditEmail.addEventListener('click', () => {
+        const box = document.getElementById('profile-edit-email-box');
+        if (box) box.classList.add('hidden');
+      });
+    }
+
+    const btnCancelEmailOtp = document.getElementById('btn-cancel-email-otp');
+    if (btnCancelEmailOtp) {
+      btnCancelEmailOtp.addEventListener('click', () => {
+        const box = document.getElementById('profile-edit-email-box');
+        if (box) box.classList.add('hidden');
+      });
+    }
+
+    const btnSendEmailOtp = document.getElementById('btn-send-email-otp');
+    if (btnSendEmailOtp) {
+      btnSendEmailOtp.addEventListener('click', () => this.handleRequestEmailChange());
+    }
+
+    const btnResendNewEmailOtp = document.getElementById('btn-resend-new-email-otp');
+    if (btnResendNewEmailOtp) {
+      btnResendNewEmailOtp.addEventListener('click', () => this.handleRequestEmailChange());
+    }
+
+    const btnVerifyNewEmail = document.getElementById('btn-verify-new-email');
+    if (btnVerifyNewEmail) {
+      btnVerifyNewEmail.addEventListener('click', () => this.handleVerifyEmailChange());
+    }
+
+    const newEmailInput = document.getElementById('profile-new-email-input');
+    if (newEmailInput) {
+      newEmailInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleRequestEmailChange();
+      });
+    }
+
+    const emailOtpInput = document.getElementById('profile-email-otp-input');
+    if (emailOtpInput) {
+      emailOtpInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleVerifyEmailChange();
+      });
     }
 
     // Leaderboard Tabs
@@ -596,6 +706,94 @@ class UIManager {
     this.refreshUserBadge();
     this.closeModal(this.authModal);
     this.showToast('Logged out successfully', 'info');
+  }
+
+  async handleSaveUsername() {
+    const input = document.getElementById('profile-new-username-input');
+    const newUsername = input ? input.value.trim() : '';
+
+    if (!newUsername) {
+      this.showToast('Please enter a username', 'error');
+      if (input) input.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btn-save-username');
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await window.apiClient.updateUsername(newUsername);
+      this.showToast(res.message || 'Username updated successfully!', 'success');
+      document.getElementById('profile-username-display').textContent = res.user.username;
+      const box = document.getElementById('profile-edit-username-box');
+      if (box) box.classList.add('hidden');
+      this.refreshUserBadge();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to update username', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async handleRequestEmailChange() {
+    const input = document.getElementById('profile-new-email-input');
+    const newEmail = input ? input.value.trim() : '';
+
+    if (!newEmail) {
+      this.showToast('Please enter a valid new email address', 'error');
+      if (input) input.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btn-send-email-otp');
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await window.apiClient.requestEmailChange(newEmail);
+      this.pendingNewEmail = res.newEmail;
+      this.showToast(res.message || 'Verification code sent to your new email!', 'success');
+      document.getElementById('profile-new-email-masked').textContent = res.maskedEmail || this.maskEmail(res.newEmail);
+      document.getElementById('profile-email-step-input').classList.add('hidden');
+      document.getElementById('profile-email-step-otp').classList.remove('hidden');
+      const otpInput = document.getElementById('profile-email-otp-input');
+      if (otpInput) {
+        otpInput.value = '';
+        setTimeout(() => otpInput.focus(), 100);
+      }
+    } catch (err) {
+      this.showToast(err.message || 'Failed to request email change', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async handleVerifyEmailChange() {
+    const otpInput = document.getElementById('profile-email-otp-input');
+    const code = otpInput ? otpInput.value.trim() : '';
+
+    if (!this.pendingNewEmail || !code) {
+      this.showToast('Please enter the 6-digit verification code', 'error');
+      if (otpInput) otpInput.focus();
+      return;
+    }
+
+    const btn = document.getElementById('btn-verify-new-email');
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await window.apiClient.verifyEmailChange(this.pendingNewEmail, code);
+      this.showToast(res.message || 'Email updated successfully!', 'success');
+      document.getElementById('profile-email-display').textContent = res.maskedEmail || this.maskEmail(res.user.email);
+      const box = document.getElementById('profile-edit-email-box');
+      if (box) box.classList.add('hidden');
+      document.getElementById('profile-email-step-otp').classList.add('hidden');
+      document.getElementById('profile-email-step-input').classList.remove('hidden');
+      this.refreshUserBadge();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to verify email change', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   }
 
   async handleLoginSubmit() {

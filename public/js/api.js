@@ -93,6 +93,36 @@ class ApiClient {
     this.setSession(null, null);
   }
 
+  // Profile Management Methods
+  async updateUsername(username) {
+    const res = await this.request('/api/user/update-username', {
+      method: 'POST',
+      body: JSON.stringify({ username })
+    });
+    if (res.token && res.user) {
+      this.setSession(res.token, res.user);
+    }
+    return res;
+  }
+
+  async requestEmailChange(newEmail) {
+    return this.request('/api/user/request-email-change', {
+      method: 'POST',
+      body: JSON.stringify({ newEmail })
+    });
+  }
+
+  async verifyEmailChange(newEmail, code) {
+    const res = await this.request('/api/user/verify-email-change', {
+      method: 'POST',
+      body: JSON.stringify({ newEmail, code })
+    });
+    if (res.token && res.user) {
+      this.setSession(res.token, res.user);
+    }
+    return res;
+  }
+
   // Scores & Leaderboards
   async submitScore(score, durationSeconds, catches) {
     const res = await this.request('/api/score/submit', {

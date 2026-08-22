@@ -669,12 +669,76 @@ html, body {
   font-weight: 800;
   color: #0284c7;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.profile-section-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  border-bottom: 1px dashed #bae6fd;
+}
+
+.profile-section-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.profile-section-item:first-child {
+  padding-top: 0;
+}
+
+.profile-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-edit-btn {
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-edit-btn:hover {
+  background: #bae6fd;
+}
+
+.profile-edit-box {
+  background: #ffffff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.06);
+}
+
+.profile-edit-box input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.profile-edit-box input:focus {
+  border-color: #0284c7;
 }
 
 .profile-username {
   font-family: var(--font-heading);
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: #0f172a;
 }
@@ -682,7 +746,6 @@ html, body {
 .profile-email {
   font-size: 0.88rem;
   color: #475569;
-  margin-top: 2px;
 }
 
 .profile-best-box {
