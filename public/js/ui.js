@@ -1073,7 +1073,6 @@ class UIManager {
             <div class="fp-avatar">${initials}</div>
             <div class="fp-details">
               <span class="fp-name">${f.username}</span>
-              <span class="fp-best-score">Best: <strong>${(f.best_score || 0).toLocaleString()} pts</strong></span>
             </div>
           </div>
           <div>

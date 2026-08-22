@@ -1229,6 +1229,28 @@ html, body {
   margin-bottom: 6px;
 }
 
+.friend-picker-search input,
+.search-bar input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.friend-picker-search input:focus,
+.search-bar input:focus {
+  border-color: #0284c7;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
 .friend-picker-list {
   display: flex;
   flex-direction: column;
