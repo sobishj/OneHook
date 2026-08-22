@@ -1,6 +1,6 @@
-# 🪝 Sprint Games — Browser Arcade Fishing Game
+# 🎮 SprintGames — Arcade Game Hub
 
-Sprint Games is a browser arcade fishing game running entirely on **Cloudflare's 100% Free-Tier Serverless Infrastructure**: **Cloudflare Workers** (Edge API & static assets) and **Cloudflare D1** (Database).
+SprintGames is an arcade game hub running entirely on **Cloudflare's 100% Free-Tier Serverless Infrastructure**: **Cloudflare Workers** (Edge API & static assets) and **Cloudflare D1** (Database).
 
 ---
 
@@ -14,7 +14,7 @@ https://sprintgames.online
      │                     │
      ├── GET /*            └── POST/GET /api/*
      ▼                         ▼
-Static Game Assets          Cloudflare D1 (onehook-db)
+Static Game Assets          Cloudflare D1
 (public/ directory)         (Prepared SQL Queries)
 ```
 
@@ -97,17 +97,24 @@ npm run deploy
 ## 🔐 Environment Variables & Secrets
 
 - **`JWT_SECRET`**: Used to sign and verify session tokens.
-  - Set locally in `wrangler.toml` or `.dev.vars`: `JWT_SECRET="your_secret_key"`
+  - Set locally in `.dev.vars`: `JWT_SECRET="your_secret_key"`
   - Set in production via Cloudflare CLI:
     ```powershell
     npx wrangler secret put JWT_SECRET
+    ```
+
+- **`BREVO_API_KEY`**: Used to send verification emails via [Brevo](https://brevo.com) (300 free emails/day).
+  - Set locally in `.dev.vars`: `BREVO_API_KEY="your_brevo_key"`
+  - Set in production via Cloudflare CLI:
+    ```powershell
+    npx wrangler secret put BREVO_API_KEY
     ```
 
 ---
 
 ## 💰 Cloudflare Free-Tier Usage Considerations
 
-| Resource | Free Tier Limit | Sprint Games Typical Usage | Monthly Cost |
+| Resource | Free Tier Limit | SprintGames Typical Usage | Monthly Cost |
 | :--- | :--- | :--- | :--- |
 | **Worker Requests** | 100,000 requests / day | ~500–5,000 / day | **₹0.00** |
 | **D1 Read Rows** | 5,000,000 / day | ~10,000 / day | **₹0.00** |

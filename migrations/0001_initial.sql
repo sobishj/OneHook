@@ -1,4 +1,4 @@
--- Migration 0001: Initial schema for OneHook
+-- Migration 0001: Initial schema for SprintGames
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,

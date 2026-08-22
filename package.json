@@ -1,7 +1,7 @@
 {
-  "name": "one-hook",
+  "name": "sprintgames",
   "version": "1.0.0",
-  "description": "One Hook - Browser Arcade Fishing Game",
+  "description": "SprintGames - Arcade Game Hub",
   "main": "src/worker.js",
   "type": "module",
   "scripts": {

@@ -616,7 +616,7 @@ class GameEngine {
     // Always ensure session storage is in sync with the new best score
     if (window.apiClient && window.apiClient.user) {
       window.apiClient.user.best_score = this.bestScore;
-      localStorage.setItem('onehook_user', JSON.stringify(window.apiClient.user));
+      localStorage.setItem('sprintgames_user', JSON.stringify(window.apiClient.user));
     }
 
     // Complete active challenge if in challenge mode

@@ -1,4 +1,27 @@
 class UIManager {
+  // Mask email for display: sobishjt@gmail.com → s*****jt@g***l.com
+  maskEmail(email) {
+    if (!email || !email.includes('@')) return email;
+    const [local, domain] = email.split('@');
+    let maskedLocal;
+    if (local.length <= 2) {
+      maskedLocal = local[0] + '*';
+    } else if (local.length <= 4) {
+      maskedLocal = local[0] + '*'.repeat(local.length - 2) + local[local.length - 1];
+    } else {
+      maskedLocal = local[0] + '*'.repeat(local.length - 2) + local.slice(-2);
+    }
+    const domainParts = domain.split('.');
+    const domainName = domainParts[0];
+    let maskedDomain;
+    if (domainName.length <= 2) {
+      maskedDomain = domainName;
+    } else {
+      maskedDomain = domainName[0] + '*'.repeat(domainName.length - 2) + domainName[domainName.length - 1];
+    }
+    return maskedLocal + '@' + maskedDomain + '.' + domainParts.slice(1).join('.');
+  }
+
   constructor() {
     // DOM Elements
     this.homeScreen = document.getElementById('home-screen');
@@ -404,7 +427,7 @@ class UIManager {
       document.getElementById('auth-step-profile').classList.remove('hidden');
 
       document.getElementById('profile-username-display').textContent = user.username;
-      document.getElementById('profile-email-display').textContent = user.email;
+      document.getElementById('profile-email-display').textContent = this.maskEmail(user.email);
       document.getElementById('profile-best-score-display').textContent = (user.best_score || 0).toLocaleString();
       this.openModal(this.authModal);
 
@@ -414,7 +437,7 @@ class UIManager {
           const freshUser = await window.apiClient.fetchMe();
           if (freshUser) {
             document.getElementById('profile-username-display').textContent = freshUser.username;
-            document.getElementById('profile-email-display').textContent = freshUser.email;
+            document.getElementById('profile-email-display').textContent = this.maskEmail(freshUser.email);
             document.getElementById('profile-best-score-display').textContent = (freshUser.best_score || 0).toLocaleString();
             this.refreshUserBadge();
           }
@@ -461,7 +484,7 @@ class UIManager {
 
       document.getElementById('auth-step-login').classList.add('hidden');
       document.getElementById('auth-step-otp').classList.remove('hidden');
-      document.getElementById('otp-sent-email').textContent = res.email;
+      document.getElementById('otp-sent-email').textContent = this.maskEmail(res.email);
     } catch (err) {
       this.showToast(err.message, 'error');
     }
@@ -501,7 +524,7 @@ class UIManager {
 
       document.getElementById('auth-step-register').classList.add('hidden');
       document.getElementById('auth-step-otp').classList.remove('hidden');
-      document.getElementById('otp-sent-email').textContent = res.email;
+      document.getElementById('otp-sent-email').textContent = this.maskEmail(res.email);
     } catch (err) {
       this.showToast(err.message, 'error');
     }

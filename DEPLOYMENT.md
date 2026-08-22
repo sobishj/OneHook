@@ -1,4 +1,4 @@
-# OneHook — Cloudflare Deployment Guide
+# SprintGames — Cloudflare Deployment Guide
 
 Run these commands **once** to go live. Each step is required.
 
@@ -29,12 +29,12 @@ npx wrangler secret put JWT_SECRET
 ```
 Enter a strong random string when prompted (e.g. a 64-character random hex string).
 
-### (Optional) Setup Real Email Delivery
-To deliver verification emails directly to user inboxes (via [Resend](https://resend.com) - 3,000 free emails/month):
+### Setup Email Delivery (Brevo)
+To deliver verification emails directly to user inboxes (via [Brevo](https://brevo.com) — 300 free emails/day):
 ```
-npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put BREVO_API_KEY
 ```
-*(If unconfigured, the Worker uses MailChannels or outputs the verification code to the Cloudflare Worker console logs).*
+*(Required for user registration. Get your API key from [Brevo Dashboard](https://app.brevo.com/settings/keys/api).)*
 
 ## Step 5 — Deploy
 ```

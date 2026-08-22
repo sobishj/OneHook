@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const FALLBACK_JWT_SECRET = 'onehook_secret_key_sprintgames_2026_secure';
+const FALLBACK_JWT_SECRET = 'sprintgames_secret_key_2026_secure';
 
 function getJwtSecret(env) {
   if (env && env.JWT_SECRET) {
@@ -110,9 +110,31 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return email;
+  const [local, domain] = email.split('@');
+  let maskedLocal;
+  if (local.length <= 2) {
+    maskedLocal = local[0] + '*';
+  } else if (local.length <= 4) {
+    maskedLocal = local[0] + '*'.repeat(local.length - 2) + local[local.length - 1];
+  } else {
+    maskedLocal = local[0] + '*'.repeat(local.length - 2) + local.slice(-2);
+  }
+  const domainParts = domain.split('.');
+  const domainName = domainParts[0];
+  let maskedDomain;
+  if (domainName.length <= 2) {
+    maskedDomain = domainName;
+  } else {
+    maskedDomain = domainName[0] + '*'.repeat(domainName.length - 2) + domainName[domainName.length - 1];
+  }
+  return maskedLocal + '@' + maskedDomain + '.' + domainParts.slice(1).join('.');
+}
+
 async function sendVerificationEmail({ email, username, code, env }) {
-  if (!env || !env.RESEND_API_KEY) {
-    console.error('[EMAIL ERROR] RESEND_API_KEY secret is not configured in worker environment.');
+  if (!env || !env.BREVO_API_KEY) {
+    console.error('[EMAIL ERROR] BREVO_API_KEY secret is not configured in worker environment.');
     return {
       success: false,
       error: 'Email verification service is not configured. Please try again later or contact support.'
@@ -120,7 +142,8 @@ async function sendVerificationEmail({ email, username, code, env }) {
   }
 
   const subject = 'SprintGames - Your Verification Code';
-  const fromEmail = (env.EMAIL_FROM && env.EMAIL_FROM.trim()) || 'SprintGames <onboarding@resend.dev>';
+  const senderEmail = (env.EMAIL_FROM && env.EMAIL_FROM.trim()) || 'sobishjt@gmail.com';
+  const senderName = (env.EMAIL_FROM_NAME && env.EMAIL_FROM_NAME.trim()) || 'SprintGames';
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #0f172a; color: #ffffff; border-radius: 12px; border: 1px solid #334155;">
       <h2 style="color: #38bdf8; text-align: center; margin-top: 0; font-size: 24px;">🎮 SprintGames</h2>
@@ -132,36 +155,37 @@ async function sendVerificationEmail({ email, username, code, env }) {
       <p style="color: #94a3b8; font-size: 13px; line-height: 1.4; border-top: 1px solid #334155; padding-top: 16px;">This code will expire in <strong>10 minutes</strong>. If you did not request this verification code, you can safely ignore this message.</p>
     </div>
   `;
-  const text = `Hello ${username || 'Player'},\n\nYour SprintGames verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Gaming!`;
+  const textContent = `Hello ${username || 'Player'},\n\nYour SprintGames verification code is: ${code}\nThis code will expire in 10 minutes.\n\nHappy Gaming!`;
 
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
+        'api-key': env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        from: fromEmail,
-        to: [email],
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: email, name: username || 'Player' }],
         subject,
-        html,
-        text
+        htmlContent: html,
+        textContent
       })
     });
 
     if (res.ok) {
-      console.log(`[EMAIL] Verification code successfully sent to ${email} via Resend`);
+      console.log(`[EMAIL] Verification code successfully sent to ${email} via Brevo`);
       return { success: true };
     }
 
-    const resendError = await res.json().catch(() => ({}));
-    console.error(`[EMAIL ERROR] Resend API error (${res.status}):`, JSON.stringify(resendError));
+    const brevoError = await res.json().catch(() => ({}));
+    console.error(`[EMAIL ERROR] Brevo API error (${res.status}):`, JSON.stringify(brevoError));
 
-    const clientMsg = resendError.message || 'Failed to send verification email. Please check your email address and try again.';
+    const clientMsg = brevoError.message || 'Failed to send verification email. Please check your email address and try again.';
     return { success: false, error: clientMsg };
   } catch (err) {
-    console.error('[EMAIL ERROR] Resend dispatch network error:', err);
+    console.error('[EMAIL ERROR] Brevo dispatch network error:', err);
     return { success: false, error: 'Failed to communicate with email delivery service. Please try again later.' };
   }
 }
@@ -245,7 +269,7 @@ export default {
 
           return jsonResponse({
             success: true,
-            message: `Verification code sent to ${user.email}!`,
+            message: `Verification code sent to ${maskEmail(user.email)}!`,
             email: user.email,
             username: user.username
           });
@@ -277,10 +301,9 @@ export default {
           return jsonResponse({ error: emailResult.error }, 500);
         }
 
-        const maskedEmail = user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
         return jsonResponse({
           success: true,
-          message: `Verification code sent to your registered email (${maskedEmail})!`,
+          message: `Verification code sent to ${maskEmail(user.email)}!`,
           email: user.email,
           username: user.username
         });
@@ -752,6 +775,61 @@ export default {
           challengerUsername: challengerUser ? challengerUser.username : 'Challenger',
           opponentUsername: opponentUser ? opponentUser.username : 'Opponent'
         });
+      }
+
+      // ----------------------------------------------------
+      // TEMPORARY DEBUG ENDPOINT — REMOVE AFTER DEBUGGING
+      // ----------------------------------------------------
+      if (pathname === '/api/debug/email-test' && method === 'GET') {
+        const diagnostics = {
+          hasBrevoKey: !!env.BREVO_API_KEY,
+          brevoKeyPrefix: env.BREVO_API_KEY ? env.BREVO_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+          senderEmail: (env.EMAIL_FROM && env.EMAIL_FROM.trim()) || 'sobishjt@gmail.com (fallback)',
+          senderName: (env.EMAIL_FROM_NAME && env.EMAIL_FROM_NAME.trim()) || 'SprintGames (fallback)',
+        };
+
+        const testEmail = url.searchParams.get('to');
+        if (!testEmail) {
+          return jsonResponse({
+            message: 'Add ?to=your@email.com to send a test email',
+            diagnostics
+          });
+        }
+
+        try {
+          const senderEmail = (env.EMAIL_FROM && env.EMAIL_FROM.trim()) || 'sobishjt@gmail.com';
+          const senderName = (env.EMAIL_FROM_NAME && env.EMAIL_FROM_NAME.trim()) || 'SprintGames';
+          const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+              'api-key': env.BREVO_API_KEY,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              sender: { name: senderName, email: senderEmail },
+              to: [{ email: testEmail, name: 'Test User' }],
+              subject: 'SprintGames Debug Test',
+              textContent: 'If you received this, email sending works!'
+            })
+          });
+
+          const responseBody = await res.json().catch(() => ({}));
+          return jsonResponse({
+            diagnostics,
+            testResult: {
+              httpStatus: res.status,
+              brevoResponse: responseBody,
+              sentTo: testEmail,
+              sentFrom: `${senderName} <${senderEmail}>`
+            }
+          });
+        } catch (err) {
+          return jsonResponse({
+            diagnostics,
+            testResult: { error: err.message }
+          }, 500);
+        }
       }
 
       // ----------------------------------------------------

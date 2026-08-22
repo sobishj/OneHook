@@ -1,19 +1,19 @@
 class ApiClient {
   constructor() {
     this.baseUrl = window.location.origin;
-    this.token = localStorage.getItem('onehook_jwt') || null;
-    this.user = JSON.parse(localStorage.getItem('onehook_user') || 'null');
+    this.token = localStorage.getItem('sprintgames_jwt') || null;
+    this.user = JSON.parse(localStorage.getItem('sprintgames_user') || 'null');
   }
 
   setSession(token, user) {
     this.token = token;
     this.user = user;
     if (token) {
-      localStorage.setItem('onehook_jwt', token);
-      localStorage.setItem('onehook_user', JSON.stringify(user));
+      localStorage.setItem('sprintgames_jwt', token);
+      localStorage.setItem('sprintgames_user', JSON.stringify(user));
     } else {
-      localStorage.removeItem('onehook_jwt');
-      localStorage.removeItem('onehook_user');
+      localStorage.removeItem('sprintgames_jwt');
+      localStorage.removeItem('sprintgames_user');
     }
   }
 
@@ -78,7 +78,7 @@ class ApiClient {
       const res = await this.request('/api/auth/me');
       if (res.user) {
         this.user = res.user;
-        localStorage.setItem('onehook_user', JSON.stringify(res.user));
+        localStorage.setItem('sprintgames_user', JSON.stringify(res.user));
       }
       return res.user;
     } catch (err) {
@@ -101,7 +101,7 @@ class ApiClient {
     });
     if (res && typeof res.bestScore === 'number' && this.user) {
       this.user.best_score = res.bestScore;
-      localStorage.setItem('onehook_user', JSON.stringify(this.user));
+      localStorage.setItem('sprintgames_user', JSON.stringify(this.user));
     }
     return res;
   }
