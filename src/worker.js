@@ -746,13 +746,16 @@ export default {
 
         const allChallenges = results || [];
         const incoming = [];
+        const won = [];
+        const lost = [];
         const sent = [];
         const completed = [];
-        let wonCount = 0;
 
         for (const ch of allChallenges) {
           const isOpponent = ch.opponent_id === userId;
           const isChallenger = ch.challenger_id === userId;
+          const hasAttempted = ch.opponent_score !== null && ch.opponent_score !== undefined;
+          const isWonByUser = ch.winner_id === userId;
 
           const item = {
             id: ch.id,
@@ -768,20 +771,28 @@ export default {
             createdAt: ch.created_at,
             isIncoming: isOpponent,
             isSent: isChallenger,
-            isWinner: ch.winner_id === userId,
-            isCompleted: ch.status === 'COMPLETED'
+            isWinner: isWonByUser,
+            isCompleted: ch.status === 'COMPLETED' || (isOpponent && isWonByUser),
+            canRetry: isOpponent && !isWonByUser
           };
 
-          if (ch.status === 'COMPLETED') {
-            completed.push(item);
-            if (ch.winner_id === userId) {
-              wonCount++;
-            }
-          } else {
-            if (isOpponent) {
+          if (isOpponent) {
+            if (isWonByUser || (hasAttempted && ch.opponent_score > ch.challenger_score)) {
+              won.push(item);
+              completed.push(item);
+            } else if (hasAttempted) {
+              lost.push(item);
+              completed.push(item);
+            } else {
               incoming.push(item);
-            } else if (isChallenger) {
-              sent.push(item);
+            }
+          } else if (isChallenger) {
+            sent.push(item);
+            if (ch.status === 'COMPLETED' || hasAttempted) {
+              completed.push(item);
+              if (isWonByUser) {
+                won.push(item);
+              }
             }
           }
         }
@@ -789,12 +800,15 @@ export default {
         return jsonResponse({
           challenges: allChallenges,
           incoming,
+          won,
+          lost,
           sent,
           completed,
           stats: {
             incomingCount: incoming.length,
+            wonCount: won.length,
+            lostCount: lost.length,
             sentCount: sent.length,
-            wonCount,
             totalCount: allChallenges.length
           }
         });
@@ -830,12 +844,16 @@ export default {
         const targetScore = challenge.challenger_score;
         const won = scoreAchieved > targetScore;
         const winnerId = won ? userId : challenge.challenger_id;
+        const finalStatus = won ? 'COMPLETED' : 'FAILED_ATTEMPT';
+
+        // Keep track of the highest score achieved so far by the opponent
+        const bestOpponentScore = Math.max(challenge.opponent_score || 0, scoreAchieved);
 
         await env.DB.prepare(`
           UPDATE challenges
-          SET opponent_score = ?, status = 'COMPLETED', winner_id = ?
+          SET opponent_score = ?, status = ?, winner_id = ?
           WHERE id = ?
-        `).bind(scoreAchieved, winnerId, challengeId).run();
+        `).bind(bestOpponentScore, finalStatus, winnerId, challengeId).run();
 
         const challengerUser = await env.DB.prepare(`SELECT username FROM users WHERE id = ?`).bind(challenge.challenger_id).first();
         const opponentUser = await env.DB.prepare(`SELECT username FROM users WHERE id = ?`).bind(challenge.opponent_id).first();
@@ -845,15 +863,18 @@ export default {
 
         return jsonResponse({
           success: true,
+          challengeId: challenge.id,
           won,
           scoreAchieved,
+          bestOpponentScore,
           targetScore,
           winnerId,
           challengerUsername: challengerName,
           opponentUsername: opponentName,
+          canRetry: !won,
           message: won
             ? `🎉 VICTORY! You beat ${challengerName}'s score of ${targetScore.toLocaleString()} with ${scoreAchieved.toLocaleString()} pts!`
-            : `Nice try! You scored ${scoreAchieved.toLocaleString()} pts, but needed over ${targetScore.toLocaleString()} to beat ${challengerName}.`
+            : `You scored ${scoreAchieved.toLocaleString()} pts. Target is ${targetScore.toLocaleString()} pts. You can retry anytime from the Lost tab!`
         });
       }
 

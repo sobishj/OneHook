@@ -247,9 +247,13 @@
             <span class="ch-stat-num" id="ch-stat-incoming">0</span>
             <span class="ch-stat-label">📥 Incoming</span>
           </div>
-          <div class="ch-stat-box highlight">
+          <div class="ch-stat-box highlight-won">
             <span class="ch-stat-num" id="ch-stat-won">0</span>
             <span class="ch-stat-label">🏆 Won</span>
+          </div>
+          <div class="ch-stat-box highlight-lost">
+            <span class="ch-stat-num" id="ch-stat-lost">0</span>
+            <span class="ch-stat-label">❌ Retry</span>
           </div>
           <div class="ch-stat-box">
             <span class="ch-stat-num" id="ch-stat-sent">0</span>
@@ -260,6 +264,7 @@
         <div class="tab-header">
           <button id="ch-tab-incoming" class="tab-btn active">📥 Incoming <span id="ch-tab-incoming-badge" class="nav-badge hidden">0</span></button>
           <button id="ch-tab-won" class="tab-btn">🏆 Won <span id="ch-tab-won-badge" class="nav-badge hidden">0</span></button>
+          <button id="ch-tab-lost" class="tab-btn">❌ Lost / Retry <span id="ch-tab-lost-badge" class="nav-badge hidden">0</span></button>
           <button id="ch-tab-sent" class="tab-btn">📤 Sent</button>
           <button id="ch-tab-history" class="tab-btn">📜 History</button>
         </div>
@@ -272,6 +277,11 @@
         <!-- Won Challenges Section -->
         <div id="ch-section-won" class="tab-content hidden">
           <div id="ch-won-container"></div>
+        </div>
+
+        <!-- Lost / Retry Challenges Section -->
+        <div id="ch-section-lost" class="tab-content hidden">
+          <div id="ch-lost-container"></div>
         </div>
 
         <!-- Sent Challenges Section -->
@@ -352,6 +362,7 @@
         </div>
 
         <div class="gameover-actions">
+          <button id="retry-challenge-btn" class="btn btn-challenge btn-full hidden" style="margin-bottom: 8px;">🔄 RETRY CHALLENGE</button>
           <button id="restart-btn" class="btn btn-yellow-play btn-full">PLAY AGAIN</button>
           <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GO HOME</button>
         </div>

@@ -212,6 +212,9 @@ class UIManager {
     const chTabWon = document.getElementById('ch-tab-won');
     if (chTabWon) chTabWon.addEventListener('click', () => this.renderWonChallengesTab());
 
+    const chTabLost = document.getElementById('ch-tab-lost');
+    if (chTabLost) chTabLost.addEventListener('click', () => this.renderLostChallengesTab());
+
     const chTabSent = document.getElementById('ch-tab-sent');
     if (chTabSent) chTabSent.addEventListener('click', () => this.renderSentChallengesTab());
 
@@ -229,6 +232,11 @@ class UIManager {
       statWonBox.parentElement.style.cursor = 'pointer';
       statWonBox.parentElement.addEventListener('click', () => this.renderWonChallengesTab());
     }
+    const statLostBox = document.getElementById('ch-stat-lost');
+    if (statLostBox && statLostBox.parentElement) {
+      statLostBox.parentElement.style.cursor = 'pointer';
+      statLostBox.parentElement.addEventListener('click', () => this.renderLostChallengesTab());
+    }
     const statSentBox = document.getElementById('ch-stat-sent');
     if (statSentBox && statSentBox.parentElement) {
       statSentBox.parentElement.style.cursor = 'pointer';
@@ -245,12 +253,20 @@ class UIManager {
     const confirmSendChBtn = document.getElementById('confirm-send-challenge-btn');
     if (confirmSendChBtn) confirmSendChBtn.addEventListener('click', () => this.confirmSendChallenge());
 
-    // Play Challenge Modal
-    document.getElementById('start-challenge-btn').addEventListener('click', () => {
-      this.closeModal(this.challengeModal);
-      this.launchGame('one-hook', this.selectedChallengeOpponent);
-    });
-    document.getElementById('close-challenge-btn').addEventListener('click', () => this.closeModal(this.challengeModal));
+    // Retry Challenge from Game Over Modal
+    const retryChBtn = document.getElementById('retry-challenge-btn');
+    if (retryChBtn) {
+      retryChBtn.addEventListener('click', () => {
+        this.closeModal(this.gameOverModal);
+        if (this.lastFailedChallengeContext) {
+          this.startIncomingChallenge(
+            this.lastFailedChallengeContext.id,
+            this.lastFailedChallengeContext.username,
+            this.lastFailedChallengeContext.scoreToBeat
+          );
+        }
+      });
+    }
 
     // Game Over Restart
     document.getElementById('restart-btn').addEventListener('click', () => {
@@ -405,9 +421,11 @@ class UIManager {
       // Challenges Badge
       const incCount = chRes.stats ? (chRes.stats.incomingCount || 0) : 0;
       const wonCount = chRes.stats ? (chRes.stats.wonCount || 0) : 0;
+      const lostCount = chRes.stats ? (chRes.stats.lostCount || 0) : 0;
       const chBadge = document.getElementById('challenges-pending-badge');
       const chTabBadge = document.getElementById('ch-tab-incoming-badge');
       const chTabWonBadge = document.getElementById('ch-tab-won-badge');
+      const chTabLostBadge = document.getElementById('ch-tab-lost-badge');
 
       if (incCount > 0) {
         if (chBadge) { chBadge.textContent = incCount; chBadge.classList.remove('hidden'); }
@@ -423,13 +441,21 @@ class UIManager {
         if (chTabWonBadge) chTabWonBadge.classList.add('hidden');
       }
 
+      if (lostCount > 0) {
+        if (chTabLostBadge) { chTabLostBadge.textContent = lostCount; chTabLostBadge.classList.remove('hidden'); }
+      } else {
+        if (chTabLostBadge) chTabLostBadge.classList.add('hidden');
+      }
+
       // Update Header Stats in Challenges modal
       if (chRes.stats) {
         const statInc = document.getElementById('ch-stat-incoming');
         const statWon = document.getElementById('ch-stat-won');
+        const statLost = document.getElementById('ch-stat-lost');
         const statSent = document.getElementById('ch-stat-sent');
         if (statInc) statInc.textContent = chRes.stats.incomingCount || 0;
         if (statWon) statWon.textContent = chRes.stats.wonCount || 0;
+        if (statLost) statLost.textContent = chRes.stats.lostCount || 0;
         if (statSent) statSent.textContent = chRes.stats.sentCount || 0;
       }
     } catch (e) {}
@@ -986,6 +1012,8 @@ class UIManager {
       this.renderIncomingChallengesTab();
     } else if (tab === 'won') {
       this.renderWonChallengesTab();
+    } else if (tab === 'lost') {
+      this.renderLostChallengesTab();
     } else if (tab === 'sent') {
       this.renderSentChallengesTab();
     } else {
@@ -996,11 +1024,13 @@ class UIManager {
   async renderIncomingChallengesTab() {
     document.getElementById('ch-tab-incoming').classList.add('active');
     document.getElementById('ch-tab-won').classList.remove('active');
+    document.getElementById('ch-tab-lost').classList.remove('active');
     document.getElementById('ch-tab-sent').classList.remove('active');
     document.getElementById('ch-tab-history').classList.remove('active');
 
     document.getElementById('ch-section-incoming').classList.remove('hidden');
     document.getElementById('ch-section-won').classList.add('hidden');
+    document.getElementById('ch-section-lost').classList.add('hidden');
     document.getElementById('ch-section-sent').classList.add('hidden');
     document.getElementById('ch-section-history').classList.add('hidden');
 
@@ -1016,8 +1046,8 @@ class UIManager {
         container.innerHTML = `
           <div class="empty-state">
             <div style="font-size: 2.2rem; margin-bottom: 8px;">🛡️</div>
-            <strong style="color: #0f172a; font-size: 1rem;">No active incoming challenges!</strong><br>
-            <span style="color: #64748b; font-size: 0.85rem;">When friends challenge your high score, they will appear here to play.</span>
+            <strong style="color: #0f172a; font-size: 1rem;">No unattempted challenges!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Check the <strong>Lost / Retry</strong> tab to retry challenges you haven't beaten yet.</span>
           </div>
         `;
         return;
@@ -1029,7 +1059,7 @@ class UIManager {
           <div class="challenge-card incoming">
             <div class="ch-card-header">
               <div class="ch-user-info">
-                <span class="ch-badge badge-incoming">⚔️ CHALLENGE</span>
+                <span class="ch-badge badge-incoming">⚔️ NEW CHALLENGE</span>
                 <h4 class="ch-name">From <strong>${ch.challengerUsername}</strong></h4>
               </div>
               <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
@@ -1054,11 +1084,13 @@ class UIManager {
   async renderWonChallengesTab() {
     document.getElementById('ch-tab-incoming').classList.remove('active');
     document.getElementById('ch-tab-won').classList.add('active');
+    document.getElementById('ch-tab-lost').classList.remove('active');
     document.getElementById('ch-tab-sent').classList.remove('active');
     document.getElementById('ch-tab-history').classList.remove('active');
 
     document.getElementById('ch-section-incoming').classList.add('hidden');
     document.getElementById('ch-section-won').classList.remove('hidden');
+    document.getElementById('ch-section-lost').classList.add('hidden');
     document.getElementById('ch-section-sent').classList.add('hidden');
     document.getElementById('ch-section-history').classList.add('hidden');
 
@@ -1069,16 +1101,14 @@ class UIManager {
       const res = await window.apiClient.getChallengesList();
       this.checkPendingNotifications();
 
-      const currentUserId = window.apiClient.user ? window.apiClient.user.id : null;
-      const completed = res.completed || [];
-      const wonChallenges = completed.filter(ch => ch.winnerId === currentUserId);
+      const wonChallenges = res.won || [];
 
       if (wonChallenges.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
             <div style="font-size: 2.2rem; margin-bottom: 8px;">🏆</div>
             <strong style="color: #0f172a; font-size: 1rem;">No victories yet!</strong><br>
-            <span style="color: #64748b; font-size: 0.85rem;">Accept an incoming challenge and score higher than your friend to claim a victory!</span>
+            <span style="color: #64748b; font-size: 0.85rem;">Play any incoming or lost challenge and score higher than your friend to claim a victory!</span>
           </div>
         `;
         return;
@@ -1117,6 +1147,74 @@ class UIManager {
     }
   }
 
+  async renderLostChallengesTab() {
+    document.getElementById('ch-tab-incoming').classList.remove('active');
+    document.getElementById('ch-tab-won').classList.remove('active');
+    document.getElementById('ch-tab-lost').classList.add('active');
+    document.getElementById('ch-tab-sent').classList.remove('active');
+    document.getElementById('ch-tab-history').classList.remove('active');
+
+    document.getElementById('ch-section-incoming').classList.add('hidden');
+    document.getElementById('ch-section-won').classList.add('hidden');
+    document.getElementById('ch-section-lost').classList.remove('hidden');
+    document.getElementById('ch-section-sent').classList.add('hidden');
+    document.getElementById('ch-section-history').classList.add('hidden');
+
+    const container = document.getElementById('ch-lost-container');
+    container.innerHTML = `<div class="loading-spinner">Loading retryable challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      this.checkPendingNotifications();
+
+      const lostChallenges = res.lost || [];
+
+      if (lostChallenges.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">🎯</div>
+            <strong style="color: #0f172a; font-size: 1rem;">No missed challenges!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Challenges where you haven't yet beaten the target will appear here so you can keep retrying.</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = `<div class="challenge-list">`;
+      lostChallenges.forEach((ch) => {
+        html += `
+          <div class="challenge-card completed loss">
+            <div class="ch-card-header">
+              <div class="ch-user-info">
+                <span class="ch-badge badge-lost">❌ TRY AGAIN</span>
+                <h4 class="ch-name">From <strong>${ch.challengerUsername}</strong></h4>
+              </div>
+              <span class="ch-date">${this.formatRelativeTime(ch.createdAt)}</span>
+            </div>
+            <div class="ch-score-comparison">
+              <div class="ch-compare-box">
+                <span class="lbl">${ch.challengerUsername} (Target to Beat)</span>
+                <span class="val" style="color: #dc2626;">${ch.challengerScore.toLocaleString()} pts</span>
+              </div>
+              <div class="ch-compare-vs">VS</div>
+              <div class="ch-compare-box">
+                <span class="lbl">Your Best Attempt</span>
+                <span class="val highlight">${(ch.opponentScore || 0).toLocaleString()} pts</span>
+              </div>
+            </div>
+            <button class="btn btn-yellow-play btn-full ch-action-btn" onclick="uiManager.startIncomingChallenge('${ch.id}', '${ch.challengerUsername}', ${ch.challengerScore})">
+              🔄 RETRY & BEAT ${ch.challengerScore.toLocaleString()} PTS
+            </button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load retry challenges: ${err.message}</div>`;
+    }
+  }
+
   startIncomingChallenge(challengeId, challengerUsername, scoreToBeat) {
     this.closeModal(this.challengesModal);
     this.launchGame('one-hook', {
@@ -1129,11 +1227,13 @@ class UIManager {
   async renderSentChallengesTab() {
     document.getElementById('ch-tab-incoming').classList.remove('active');
     document.getElementById('ch-tab-won').classList.remove('active');
+    document.getElementById('ch-tab-lost').classList.remove('active');
     document.getElementById('ch-tab-sent').classList.add('active');
     document.getElementById('ch-tab-history').classList.remove('active');
 
     document.getElementById('ch-section-incoming').classList.add('hidden');
     document.getElementById('ch-section-won').classList.add('hidden');
+    document.getElementById('ch-section-lost').classList.add('hidden');
     document.getElementById('ch-section-sent').classList.remove('hidden');
     document.getElementById('ch-section-history').classList.add('hidden');
 
@@ -1187,11 +1287,13 @@ class UIManager {
   async renderHistoryChallengesTab() {
     document.getElementById('ch-tab-incoming').classList.remove('active');
     document.getElementById('ch-tab-won').classList.remove('active');
+    document.getElementById('ch-tab-lost').classList.remove('active');
     document.getElementById('ch-tab-sent').classList.remove('active');
     document.getElementById('ch-tab-history').classList.add('active');
 
     document.getElementById('ch-section-incoming').classList.add('hidden');
     document.getElementById('ch-section-won').classList.add('hidden');
+    document.getElementById('ch-section-lost').classList.add('hidden');
     document.getElementById('ch-section-sent').classList.add('hidden');
     document.getElementById('ch-section-history').classList.remove('hidden');
 
@@ -1300,12 +1402,15 @@ class UIManager {
       newBestBanner.classList.add('hidden');
     }
 
-    // Challenge mode result banner
+    // Challenge mode result banner & retry button
     const chBanner = document.getElementById('go-challenge-result-banner');
+    const retryBtn = document.getElementById('retry-challenge-btn');
+
     if (data.challengeResult) {
       chBanner.classList.remove('hidden');
       if (data.challengeResult.won) {
         window.soundManager.playLevelUp();
+        if (retryBtn) retryBtn.classList.add('hidden');
         chBanner.innerHTML = `
           <div class="challenge-win">
             🏆 <h3 style="margin-bottom: 4px;">CHALLENGE WON!</h3>
@@ -1313,15 +1418,22 @@ class UIManager {
           </div>
         `;
       } else {
+        this.lastFailedChallengeContext = {
+          id: data.challengeResult.challengeId || (window.game && window.game.activeChallenge ? window.game.activeChallenge.id : null),
+          username: data.challengeResult.challengerUsername,
+          scoreToBeat: data.challengeResult.targetScore
+        };
+        if (retryBtn) retryBtn.classList.remove('hidden');
         chBanner.innerHTML = `
           <div class="challenge-loss">
             😤 <h3 style="margin-bottom: 4px;">CHALLENGE MISSED</h3>
-            <p>You scored <strong>${data.challengeResult.scoreAchieved.toLocaleString()} pts</strong> (Target: ${data.challengeResult.targetScore.toLocaleString()} pts)</p>
+            <p>You scored <strong>${data.challengeResult.scoreAchieved.toLocaleString()} pts</strong> (Target: ${data.challengeResult.targetScore.toLocaleString()} pts).<br>You can keep retrying!</p>
           </div>
         `;
       }
       this.checkPendingNotifications();
     } else {
+      if (retryBtn) retryBtn.classList.add('hidden');
       chBanner.classList.add('hidden');
     }
 

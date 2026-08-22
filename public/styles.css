@@ -1162,8 +1162,8 @@ html, body {
    ========================================================================== */
 .challenge-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   margin-bottom: 18px;
 }
 
@@ -1171,12 +1171,36 @@ html, body {
   background: #f0f9ff;
   border: 1.5px solid #bae6fd;
   border-radius: 14px;
-  padding: 12px 8px;
+  padding: 10px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ch-stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+}
+
+.ch-stat-box.highlight-won {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.ch-stat-box.highlight-won .ch-stat-num {
+  color: #059669;
+}
+
+.ch-stat-box.highlight-lost {
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+.ch-stat-box.highlight-lost .ch-stat-num {
+  color: #e11d48;
 }
 
 .ch-stat-box.highlight {
@@ -1186,7 +1210,7 @@ html, body {
 
 .ch-stat-num {
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 900;
   color: #0284c7;
   line-height: 1.1;
@@ -1197,11 +1221,11 @@ html, body {
 }
 
 .ch-stat-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #64748b;
   margin-top: 2px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .challenge-list {
