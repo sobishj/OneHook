@@ -1,12 +1,16 @@
 {
   "id": "/",
-  "name": "Sprint Games",
+  "name": "SprintGames - Arcade Game Hub",
   "short_name": "SprintGames",
   "description": "Discover and play arcade browser games. Drop the hook, catch fish, and beat high scores in SprintGames!",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
   "orientation": "any",
   "theme_color": "#0f172a",
   "background_color": "#0f172a",
@@ -24,16 +28,22 @@
       "purpose": "any"
     },
     {
+      "src": "/assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/assets/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/icon-maskable-512.png",
-      "sizes": "512x512",
+      "src": "/assets/apple-touch-icon.png",
+      "sizes": "180x180",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ],
   "screenshots": [
@@ -41,8 +51,23 @@
       "src": "/assets/one_hook_cover.jpg",
       "sizes": "1024x1024",
       "type": "image/jpeg",
-      "form_factor": "wide",
-      "label": "OneHook - Arcade Fishing Game"
+      "label": "SprintGames - Arcade Game Hub"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Play OneHook",
+      "short_name": "OneHook",
+      "description": "Play OneHook arcade fishing game",
+      "url": "/?game=onehook",
+      "icons": [
+        {
+          "src": "/assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
+
+

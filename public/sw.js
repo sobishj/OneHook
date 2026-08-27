@@ -1,15 +1,17 @@
 // SprintGames PWA Service Worker
-const CACHE_NAME = 'sprintgames-shell-v36';
+const CACHE_NAME = 'sprintgames-shell-v38';
 
-// Static application shell assets
+// Static application shell assets required for offline arcade play
 const STATIC_ASSETS = [
   '/',
+  '/index.html',
   '/styles.css',
   '/manifest.json',
   '/js/api.js',
   '/js/sound.js',
   '/js/fish.js',
   '/js/game.js',
+  '/js/games-data.js',
   '/js/ui.js',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
@@ -23,12 +25,18 @@ const STATIC_ASSETS = [
 
 // 1. Install Event: Pre-cache static app shell assets
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[Service Worker] Non-fatal asset pre-cache warning:', err);
-      });
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Use map with individual catches so one failed asset doesn't abort entire SW install
+      await Promise.all(
+        STATIC_ASSETS.map((asset) =>
+          cache.add(asset).catch((err) => {
+            console.warn('[Service Worker] Non-fatal cache item skipped:', asset, err);
+          })
+        )
+      );
+    })
   );
 });
 
@@ -50,6 +58,7 @@ self.addEventListener('activate', (event) => {
 // 3. Fetch Event: Handle ALL requests to ensure full SW control (required for standalone PWA mode)
 self.addEventListener('fetch', (event) => {
   const request = event.request;
+  if (!request.url.startsWith('http')) return;
   const url = new URL(request.url);
 
   // API requests and non-GET: pass through to network (but still respond, don't just return)

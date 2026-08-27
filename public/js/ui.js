@@ -69,10 +69,21 @@ class UIManager {
     // Temporary storage for auth flow
     this.pendingEmail = '';
 
-    // Active Challenge context
-    this.selectedChallengeOpponent = null;
+    // PWA Elements
+    this.pwaInstallBtn = document.getElementById('pwa-install-btn');
+    this.homeInstallCard = document.getElementById('home-install-card');
+    this.homeInstallBtn = document.getElementById('home-install-btn');
+    this.pwaInstallBanner = document.getElementById('pwa-install-banner');
+    this.pwaBannerInstallBtn = document.getElementById('pwa-banner-install-btn');
+    this.pwaBannerDismissBtn = document.getElementById('pwa-banner-dismiss-btn');
+    this.pwaInstallModal = document.getElementById('pwa-install-modal');
+    this.closePwaModalBtn = document.getElementById('close-pwa-modal-btn');
+    this.pwaModalDirectInstallBtn = document.getElementById('pwa-modal-direct-install-btn');
+    this.pwaDesktopInstallBtn = document.getElementById('pwa-desktop-install-action-btn');
+    this.deferredInstallPrompt = null;
 
     this.initListeners();
+    this.initPWA();
     this.renderFeaturedGames();
     this.initRouting();
   }
@@ -663,6 +674,167 @@ class UIManager {
     modal.classList.add('hidden');
   }
 
+  // ==========================================
+  // PWA (Progressive Web App) Installation
+  // ==========================================
+  initPWA() {
+    // 1. Capture beforeinstallprompt event (Android Chrome, Edge, etc.)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredInstallPrompt = e;
+      this.updatePWAVisibility();
+    });
+
+    // 2. Track successful installation
+    window.addEventListener('appinstalled', () => {
+      this.deferredInstallPrompt = null;
+      this.updatePWAVisibility();
+      this.showToast('🎉 SprintGames installed to your Home Screen!', 'success');
+    });
+
+    // 3. Attach click listeners to install buttons
+    if (this.pwaInstallBtn) {
+      this.pwaInstallBtn.addEventListener('click', () => this.handlePWAInstallClick());
+    }
+
+    if (this.homeInstallBtn) {
+      this.homeInstallBtn.addEventListener('click', () => this.handlePWAInstallClick());
+    }
+
+    if (this.pwaBannerInstallBtn) {
+      this.pwaBannerInstallBtn.addEventListener('click', () => this.handlePWAInstallClick());
+    }
+
+    if (this.pwaBannerDismissBtn) {
+      this.pwaBannerDismissBtn.addEventListener('click', () => this.dismissPWABanner());
+    }
+
+    if (this.closePwaModalBtn) {
+      this.closePwaModalBtn.addEventListener('click', () => this.closeModal(this.pwaInstallModal));
+    }
+
+    if (this.pwaModalDirectInstallBtn) {
+      this.pwaModalDirectInstallBtn.addEventListener('click', () => this.executeNativeInstallPrompt());
+    }
+
+    if (this.pwaDesktopInstallBtn) {
+      this.pwaDesktopInstallBtn.addEventListener('click', () => this.executeNativeInstallPrompt());
+    }
+
+    // 4. Initial visibility check
+    this.updatePWAVisibility();
+  }
+
+  isAppInstalledOrStandalone() {
+    const isStandaloneMedia = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    const isIOSStandalone = window.navigator && window.navigator.standalone === true;
+    return Boolean(isStandaloneMedia || isIOSStandalone);
+  }
+
+  updatePWAVisibility() {
+    if (this.isAppInstalledOrStandalone()) {
+      if (this.pwaInstallBtn) this.pwaInstallBtn.classList.add('hidden');
+      if (this.homeInstallCard) this.homeInstallCard.classList.add('hidden');
+      if (this.pwaInstallBanner) this.pwaInstallBanner.classList.add('hidden');
+      return;
+    }
+
+    // Non-installed: show install buttons across all mobile & desktop browsers
+    if (this.pwaInstallBtn) {
+      this.pwaInstallBtn.classList.remove('hidden');
+    }
+
+    if (this.homeInstallCard) {
+      this.homeInstallCard.classList.remove('hidden');
+    }
+
+    // On mobile devices, show floating bottom banner if not dismissed during current session
+    const isDismissed = sessionStorage.getItem('sprintgames_pwa_dismissed') === 'true';
+    if (!isDismissed && this.pwaInstallBanner) {
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          if (!this.isAppInstalledOrStandalone() && sessionStorage.getItem('sprintgames_pwa_dismissed') !== 'true') {
+            this.pwaInstallBanner.classList.remove('hidden');
+          }
+        }, 800);
+      }
+    }
+  }
+
+  dismissPWABanner() {
+    sessionStorage.setItem('sprintgames_pwa_dismissed', 'true');
+    if (this.pwaInstallBanner) {
+      this.pwaInstallBanner.classList.add('hidden');
+    }
+  }
+
+  async handlePWAInstallClick() {
+    if (this.deferredInstallPrompt) {
+      try {
+        this.deferredInstallPrompt.prompt();
+        const choiceResult = await this.deferredInstallPrompt.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          this.deferredInstallPrompt = null;
+          this.updatePWAVisibility();
+          if (this.pwaInstallModal) this.closeModal(this.pwaInstallModal);
+        }
+      } catch (err) {
+        console.warn('[PWA] Native prompt error:', err);
+        this.openPWAInstallModal();
+      }
+    } else {
+      this.openPWAInstallModal();
+    }
+  }
+
+  async executeNativeInstallPrompt() {
+    if (this.deferredInstallPrompt) {
+      try {
+        this.deferredInstallPrompt.prompt();
+        const choiceResult = await this.deferredInstallPrompt.userChoice;
+        if (choiceResult && choiceResult.outcome === 'accepted') {
+          this.deferredInstallPrompt = null;
+          this.updatePWAVisibility();
+          if (this.pwaInstallModal) this.closeModal(this.pwaInstallModal);
+        }
+      } catch (err) {
+        console.warn('[PWA] Direct install prompt error:', err);
+      }
+    } else {
+      this.showToast('Please follow the steps shown below on your browser.', 'info');
+    }
+  }
+
+  openPWAInstallModal() {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const isAndroid = /android/i.test(ua);
+
+    const nativeSection = document.getElementById('pwa-native-prompt-section');
+    const iosSection = document.getElementById('pwa-ios-instructions');
+    const androidSection = document.getElementById('pwa-android-instructions');
+    const desktopSection = document.getElementById('pwa-desktop-instructions');
+
+    if (nativeSection) nativeSection.classList.add('hidden');
+    if (iosSection) iosSection.classList.add('hidden');
+    if (androidSection) androidSection.classList.add('hidden');
+    if (desktopSection) desktopSection.classList.add('hidden');
+
+    if (this.deferredInstallPrompt && nativeSection) {
+      nativeSection.classList.remove('hidden');
+    } else if (isIOS && iosSection) {
+      iosSection.classList.remove('hidden');
+    } else if (isAndroid && androidSection) {
+      androidSection.classList.remove('hidden');
+    } else if (desktopSection) {
+      desktopSection.classList.remove('hidden');
+    }
+
+    if (this.pwaInstallModal) {
+      this.openModal(this.pwaInstallModal);
+    }
+  }
+
   // Auth Flow
   async openAuthModal() {
     const user = window.apiClient.user;
@@ -1145,27 +1317,51 @@ class UIManager {
 
     try {
       const res = await window.apiClient.getPendingRequests();
-      if (!res.requests || res.requests.length === 0) {
+      const incoming = res.requests || [];
+      const sent = res.sent || [];
+
+      if (incoming.length === 0 && sent.length === 0) {
         container.innerHTML = `<div class="empty-state">No pending friend requests</div>`;
         return;
       }
 
-      let html = `<div class="friends-grid">`;
-      res.requests.forEach((req) => {
-        html += `
-          <div class="friend-card">
-            <div class="friend-info">
-              <span class="friend-name">👤 ${req.sender_username}</span>
-              <span class="friend-score">Best: ${req.sender_score.toLocaleString()}</span>
+      let html = '';
+
+      if (incoming.length > 0) {
+        html += `<p class="requests-section-label">📥 Incoming</p><div class="friends-grid">`;
+        incoming.forEach((req) => {
+          html += `
+            <div class="friend-card">
+              <div class="friend-info">
+                <span class="friend-name">👤 ${req.sender_username}</span>
+                <span class="friend-score">Best: ${req.sender_score.toLocaleString()}</span>
+              </div>
+              <div class="req-actions">
+                <button class="btn btn-sm btn-success" onclick="uiManager.respondRequest('${req.id}', 'ACCEPT')">ACCEPT</button>
+                <button class="btn btn-sm btn-danger" onclick="uiManager.respondRequest('${req.id}', 'DECLINE')">DECLINE</button>
+              </div>
             </div>
-            <div class="req-actions">
-              <button class="btn btn-sm btn-success" onclick="uiManager.respondRequest('${req.id}', 'ACCEPT')">ACCEPT</button>
-              <button class="btn btn-sm btn-danger" onclick="uiManager.respondRequest('${req.id}', 'DECLINE')">DECLINE</button>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      if (sent.length > 0) {
+        html += `<p class="requests-section-label" style="margin-top:14px;">📤 Sent</p><div class="friends-grid">`;
+        sent.forEach((req) => {
+          html += `
+            <div class="friend-card">
+              <div class="friend-info">
+                <span class="friend-name">👤 ${req.receiver_username}</span>
+                <span class="friend-score">Best: ${req.receiver_score.toLocaleString()}</span>
+              </div>
+              <button class="btn btn-sm btn-secondary" onclick="uiManager.cancelRequest('${req.id}')">CANCEL</button>
             </div>
-          </div>
-        `;
-      });
-      html += `</div>`;
+          `;
+        });
+        html += `</div>`;
+      }
+
       container.innerHTML = html;
     } catch (err) {
       container.innerHTML = `<div class="error-state">Failed to load requests: ${err.message}</div>`;
@@ -1175,6 +1371,16 @@ class UIManager {
   async respondRequest(requestId, action) {
     try {
       const res = await window.apiClient.respondFriendRequest(requestId, action);
+      this.showToast(res.message, 'success');
+      this.renderPendingRequestsTab();
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  }
+
+  async cancelRequest(requestId) {
+    try {
+      const res = await window.apiClient.cancelFriendRequest(requestId);
       this.showToast(res.message, 'success');
       this.renderPendingRequestsTab();
     } catch (err) {

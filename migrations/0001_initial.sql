@@ -47,11 +47,3 @@ CREATE TABLE IF NOT EXISTS challenges (
   FOREIGN KEY (challenger_id) REFERENCES users(id),
   FOREIGN KEY (opponent_id) REFERENCES users(id)
 );
-
--- Initial seed data for global leaderboard
-INSERT OR IGNORE INTO users (id, username, email, email_verified, best_score) VALUES
-  ('usr_rahul', 'Rahul', 'rahul@example.com', 1, 2842),
-  ('usr_arun', 'Arun', 'arun@example.com', 1, 2731),
-  ('usr_ethan', 'Ethan', 'ethan@example.com', 1, 2694),
-  ('usr_vishnu', 'Vishnu', 'vishnu@example.com', 1, 2520),
-  ('usr_anu', 'Anu', 'anu@example.com', 1, 2410);

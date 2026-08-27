@@ -167,6 +167,13 @@ class ApiClient {
     });
   }
 
+  async cancelFriendRequest(requestId) {
+    return this.request('/api/friends/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ requestId })
+    });
+  }
+
   async getFriendsList() {
     return this.request('/api/friends/list');
   }

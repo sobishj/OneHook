@@ -749,7 +749,7 @@ export default {
         }
         const userId = authUser.id;
 
-        const { results } = await env.DB.prepare(`
+        const { results: incoming } = await env.DB.prepare(`
           SELECT fr.id, fr.sender_id, fr.created_at, u.username as sender_username, u.best_score as sender_score
           FROM friend_requests fr
           JOIN users u ON fr.sender_id = u.id
@@ -757,7 +757,15 @@ export default {
           ORDER BY fr.created_at DESC
         `).bind(userId).all();
 
-        return jsonResponse({ requests: results || [] });
+        const { results: sent } = await env.DB.prepare(`
+          SELECT fr.id, fr.receiver_id, fr.created_at, u.username as receiver_username, u.best_score as receiver_score
+          FROM friend_requests fr
+          JOIN users u ON fr.receiver_id = u.id
+          WHERE fr.sender_id = ? AND fr.status = 'PENDING'
+          ORDER BY fr.created_at DESC
+        `).bind(userId).all();
+
+        return jsonResponse({ requests: incoming || [], sent: sent || [] });
       }
 
       // POST /api/friends/respond
@@ -788,6 +796,30 @@ export default {
           await env.DB.prepare(`UPDATE friend_requests SET status = 'DECLINED' WHERE id = ?`).bind(requestId).run();
           return jsonResponse({ message: 'Friend request declined' });
         }
+      }
+
+      // POST /api/friends/cancel
+      if (pathname === '/api/friends/cancel' && method === 'POST') {
+        const authUser = verifyToken(request, env);
+        if (!authUser) {
+          return jsonResponse({ error: 'Authentication token required' }, 401);
+        }
+        const userId = authUser.id;
+
+        const body = await request.json().catch(() => ({}));
+        const { requestId } = body;
+
+        if (!requestId) {
+          return jsonResponse({ error: 'Request ID required' }, 400);
+        }
+
+        const friendReq = await env.DB.prepare(`SELECT * FROM friend_requests WHERE id = ? AND sender_id = ? AND status = 'PENDING'`).bind(requestId, userId).first();
+        if (!friendReq) {
+          return jsonResponse({ error: 'Friend request not found' }, 404);
+        }
+
+        await env.DB.prepare(`DELETE FROM friend_requests WHERE id = ?`).bind(requestId).run();
+        return jsonResponse({ message: 'Friend request cancelled' });
       }
 
       // GET /api/friends/list
@@ -1132,7 +1164,27 @@ export default {
 
       // If env.ASSETS binding exists, pass request to static assets server
       if (env.ASSETS) {
-        return env.ASSETS.fetch(request);
+        const assetResponse = await env.ASSETS.fetch(request);
+        if (pathname === '/sw.js') {
+          const newHeaders = new Headers(assetResponse.headers);
+          newHeaders.set('Service-Worker-Allowed', '/');
+          newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+          return new Response(assetResponse.body, {
+            status: assetResponse.status,
+            statusText: assetResponse.statusText,
+            headers: newHeaders
+          });
+        }
+        if (pathname === '/manifest.json') {
+          const newHeaders = new Headers(assetResponse.headers);
+          newHeaders.set('Content-Type', 'application/manifest+json; charset=utf-8');
+          return new Response(assetResponse.body, {
+            status: assetResponse.status,
+            statusText: assetResponse.statusText,
+            headers: newHeaders
+          });
+        }
+        return assetResponse;
       }
 
       return new Response('Not Found', { status: 404 });

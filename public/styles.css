@@ -44,6 +44,28 @@ html, body {
   font-family: var(--font-body);
   color: var(--text-main);
   touch-action: manipulation;
+  scrollbar-width: thin;
+  scrollbar-color: #7dd3fc rgba(224, 242, 254, 0.5);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(224, 242, 254, 0.4);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #7dd3fc;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
 }
 
 /* Canvas Viewport */
@@ -620,6 +642,8 @@ html, body {
   max-width: 540px;
 }
 
+
+
 .modal-close {
   position: absolute;
   top: 16px;
@@ -988,11 +1012,77 @@ html, body {
   color: #d97706;
 }
 
+/* Friends list containers — fixed height so they scroll independently */
+#fr-list-container,
+#friend-search-results,
+#fr-requests-container {
+  max-height: 220px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 rgba(224, 242, 254, 0.6);
+}
+
+#fr-list-container::-webkit-scrollbar,
+#friend-search-results::-webkit-scrollbar,
+#fr-requests-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#fr-list-container::-webkit-scrollbar-track,
+#friend-search-results::-webkit-scrollbar-track,
+#fr-requests-container::-webkit-scrollbar-track {
+  background: rgba(224, 242, 254, 0.6);
+  border-radius: 8px;
+}
+
+#fr-list-container::-webkit-scrollbar-thumb,
+#friend-search-results::-webkit-scrollbar-thumb,
+#fr-requests-container::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 8px;
+}
+
+#fr-list-container::-webkit-scrollbar-thumb:hover,
+#friend-search-results::-webkit-scrollbar-thumb:hover,
+#fr-requests-container::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+/* Requests tab section labels */
+.requests-section-label {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0284c7;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
 /* Friends Grid */
 .friends-grid {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.friends-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.friends-grid::-webkit-scrollbar-track {
+  background: rgba(224, 242, 254, 0.6);
+  border-radius: 8px;
+}
+
+.friends-grid::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 8px;
+}
+
+.friends-grid::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
 }
 
 .friend-card {
@@ -1003,6 +1093,13 @@ html, body {
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 12px 16px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.friend-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
 }
 
 .friend-info {
@@ -1318,9 +1415,30 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 380px;
+  max-height: 280px;
   overflow-y: auto;
-  padding-right: 2px;
+  overflow-x: hidden;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 rgba(224, 242, 254, 0.6);
+}
+
+.friend-picker-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.friend-picker-list::-webkit-scrollbar-track {
+  background: rgba(224, 242, 254, 0.6);
+  border-radius: 8px;
+}
+
+.friend-picker-list::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 8px;
+}
+
+.friend-picker-list::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
 }
 
 .fp-friend-card {
@@ -1852,3 +1970,298 @@ html, body {
     max-width: 620px;
   }
 }
+
+/* ==========================================================================
+   PWA INSTALLATION UI COMPONENTS (Universal Mobile & Desktop Support)
+   ========================================================================== */
+
+/* Navbar Install Button */
+.btn-install-highlight {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4) !important;
+  letter-spacing: 0.5px;
+  animation: pulse-glow 2.5s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+  }
+}
+
+/* Floating Bottom Install Banner (Mobile) */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 480px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35), 0 0 20px rgba(56, 189, 248, 0.2);
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 9999;
+  animation: slideUpBanner 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpBanner {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 40px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.pwa-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pwa-banner-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.pwa-banner-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pwa-banner-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pwa-banner-sub {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pwa-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-banner-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.pwa-banner-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal PWA Install */
+.modal-pwa-install {
+  max-width: 460px;
+  text-align: left;
+}
+
+.pwa-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.pwa-modal-app-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.25);
+  flex-shrink: 0;
+}
+
+.pwa-modal-title {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.pwa-modal-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.pwa-section {
+  margin-top: 14px;
+}
+
+.pwa-benefit-text {
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.pwa-instruction-badge {
+  display: inline-block;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  border: 1px solid #bae6fd;
+}
+
+.pwa-step-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pwa-step-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(240, 249, 255, 0.7);
+  border: 1px solid #e0f2fe;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.pwa-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pwa-step-body {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+
+.pwa-icon-hint {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Home Screen Prominent Install Card */
+.pwa-home-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(245, 158, 11, 0.1));
+  border: 1.5px solid rgba(2, 132, 199, 0.35);
+  border-radius: 20px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.1);
+  animation: slideUpBanner 0.4s ease;
+}
+
+.pwa-home-card-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pwa-home-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.pwa-home-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+
+.pwa-home-card-sub {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.btn-home-install {
+  flex-shrink: 0;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .pwa-home-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .pwa-home-card-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .btn-home-install {
+    width: 100%;
+  }
+}
+
+

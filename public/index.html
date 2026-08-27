@@ -6,16 +6,24 @@
   <title>SprintGames - Arcade Game Hub</title>
   <meta name="description" content="Discover and play arcade browser games. Drop the hook, catch the fish, and beat high scores in SprintGames!">
 
-  <!-- PWA & Mobile Metadata -->
+  <!-- PWA & Mobile Web App Metadata -->
   <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0284c7">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SprintGames">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="alternate icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="application-name" content="SprintGames">
+  <meta name="msapplication-TileColor" content="#0f172a">
+  <meta name="msapplication-TileImage" content="/assets/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/assets/icon-512.png">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +50,7 @@
       </div>
 
       <div class="portal-nav-actions">
+        <button id="pwa-install-btn" class="btn btn-nav-item btn-install-highlight hidden" title="Install App on Phone / PC">📲 Install App</button>
         <button id="open-leaderboard-btn" class="btn btn-nav-item">🏆 Leaderboard</button>
         <button id="open-challenges-btn" class="btn btn-nav-item">⚔️ Challenges <span id="challenges-pending-badge" class="nav-badge hidden">0</span></button>
         <button id="open-friends-btn" class="btn btn-nav-item">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
@@ -99,6 +108,18 @@
           <div class="yellow-accent-bar"></div>
           <h2 class="section-title">PLAY & COMPETE</h2>
         </div>
+      </div>
+
+      <!-- Prominent Install Card on Home Screen -->
+      <div id="home-install-card" class="pwa-home-card hidden">
+        <div class="pwa-home-card-content">
+          <img src="/assets/icon-192.png" alt="SprintGames" class="pwa-home-card-icon">
+          <div class="pwa-home-card-text">
+            <h3 class="pwa-home-card-title">📲 Install SprintGames App</h3>
+            <p class="pwa-home-card-sub">Play full-screen, launch instantly from your home screen & play offline!</p>
+          </div>
+        </div>
+        <button id="home-install-btn" class="btn btn-yellow-play btn-home-install">INSTALL NOW</button>
       </div>
 
       <!-- Responsive Game Cards Grid -->
@@ -437,6 +458,96 @@
           <button id="restart-btn" class="btn btn-yellow-play btn-full">PLAY AGAIN</button>
           <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GO HOME</button>
         </div>
+    </div>
+
+    <!-- PWA Install Floating Banner for Mobile Phones -->
+    <aside id="pwa-install-banner" class="pwa-install-banner hidden" aria-label="Install App Prompt">
+      <div class="pwa-banner-left">
+        <img src="/assets/icon-192.png" alt="SprintGames" class="pwa-banner-icon">
+        <div class="pwa-banner-info">
+          <span class="pwa-banner-title">Install SprintGames</span>
+          <span class="pwa-banner-sub">Fullscreen arcade, fast loading & offline play</span>
+        </div>
+      </div>
+      <div class="pwa-banner-right">
+        <button id="pwa-banner-install-btn" class="btn btn-sm btn-yellow-play">Install</button>
+        <button id="pwa-banner-dismiss-btn" class="pwa-banner-close" aria-label="Dismiss banner" title="Dismiss">&times;</button>
+      </div>
+    </aside>
+
+    <!-- PWA Universal Install Modal (Works across iOS, Android, Desktop) -->
+    <div id="pwa-install-modal" class="modal-backdrop hidden">
+      <div class="modal-card glass-panel modal-pwa-install">
+        <button id="close-pwa-modal-btn" class="modal-close">&times;</button>
+        <div class="pwa-modal-header">
+          <img src="/assets/icon-192.png" alt="SprintGames Icon" class="pwa-modal-app-icon">
+          <div>
+            <h2 class="pwa-modal-title">Install SprintGames</h2>
+            <p class="pwa-modal-sub">Add to your Home Screen for instant play & offline access</p>
+          </div>
+        </div>
+
+        <!-- Direct Trigger (Chrome / Edge / Supported Android Browsers) -->
+        <div id="pwa-native-prompt-section" class="pwa-section hidden">
+          <p class="pwa-benefit-text">Tap the button below to add SprintGames directly to your phone's home screen or apps list:</p>
+          <button id="pwa-modal-direct-install-btn" class="btn btn-yellow-play btn-full">📲 Install App Now</button>
+        </div>
+
+        <!-- iOS Safari & iPadOS Instructions -->
+        <div id="pwa-ios-instructions" class="pwa-section hidden">
+          <div class="pwa-instruction-badge">📱 iPhone & iPad (Safari)</div>
+          <ol class="pwa-step-list">
+            <li>
+              <div class="pwa-step-num">1</div>
+              <div class="pwa-step-body">
+                <span>Tap the <strong>Share</strong> button</span>
+                <span class="pwa-icon-hint">⎋ (Square with arrow up) at the bottom or top of Safari</span>
+              </div>
+            </li>
+            <li>
+              <div class="pwa-step-num">2</div>
+              <div class="pwa-step-body">
+                <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
+                <span class="pwa-icon-hint">➕ icon in the action list</span>
+              </div>
+            </li>
+            <li>
+              <div class="pwa-step-num">3</div>
+              <div class="pwa-step-body">
+                <span>Tap <strong>"Add"</strong> in the top-right corner</span>
+                <span class="pwa-icon-hint">SprintGames icon will appear on your home screen!</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Android Generic / In-App Browser Instructions -->
+        <div id="pwa-android-instructions" class="pwa-section hidden">
+          <div class="pwa-instruction-badge">🤖 Android (Chrome / Samsung / Firefox)</div>
+          <ol class="pwa-step-list">
+            <li>
+              <div class="pwa-step-num">1</div>
+              <div class="pwa-step-body">
+                <span>Tap the browser <strong>Menu</strong></span>
+                <span class="pwa-icon-hint">⋮ (Three dots at top-right) or ≡ in Samsung Internet</span>
+              </div>
+            </li>
+            <li>
+              <div class="pwa-step-num">2</div>
+              <div class="pwa-step-body">
+                <span>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></span>
+                <span class="pwa-icon-hint">Follow the quick on-screen prompt to install</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Desktop Browser Instructions -->
+        <div id="pwa-desktop-instructions" class="pwa-section hidden">
+          <div class="pwa-instruction-badge">💻 Desktop Browser</div>
+          <p class="pwa-benefit-text">Click the <strong>Install ⊕</strong> button in your browser's address bar or click below.</p>
+          <button id="pwa-desktop-install-action-btn" class="btn btn-primary btn-full">Install Desktop App</button>
+        </div>
       </div>
     </div>
 
@@ -458,17 +569,16 @@
       window.game.run();
     });
 
-    // Safe PWA Service Worker Registration
+    // Immediate PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('[PWA] Service Worker registered with scope:', registration.scope);
-          })
-          .catch((err) => {
-            console.warn('[PWA] Service Worker registration failed (non-fatal):', err);
-          });
-      });
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          console.log('[PWA] Service Worker registered with scope:', registration.scope);
+          registration.update();
+        })
+        .catch((err) => {
+          console.warn('[PWA] Service Worker registration failed:', err);
+        });
     }
   </script>
 </body>
