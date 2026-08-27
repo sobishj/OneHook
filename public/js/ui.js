@@ -2008,18 +2008,29 @@ class UIManager {
       newBestBanner.classList.add('hidden');
     }
 
-    // Challenge Friends with this match score button
+    // Challenge Friends button vs Guest CTA
     const goChFriendsBtn = document.getElementById('go-challenge-friends-btn');
-    if (goChFriendsBtn) {
-      if (data.score > 0) {
-        goChFriendsBtn.classList.remove('hidden');
-        goChFriendsBtn.textContent = `⚔️ Challenge Friends (${data.score.toLocaleString()} pts)`;
-        goChFriendsBtn.onclick = () => {
-          this.openFriendPickerModal(data.score);
-        };
-      } else {
-        goChFriendsBtn.classList.add('hidden');
+    const goGuestCta = document.getElementById('go-guest-cta');
+    const isLoggedIn = !!window.apiClient.user;
+
+    if (isLoggedIn) {
+      // Show challenge button, hide guest CTA
+      if (goGuestCta) goGuestCta.classList.add('hidden');
+      if (goChFriendsBtn) {
+        if (data.score > 0) {
+          goChFriendsBtn.classList.remove('hidden');
+          goChFriendsBtn.textContent = `⚔️ Challenge Friends (${data.score.toLocaleString()} pts)`;
+          goChFriendsBtn.onclick = () => {
+            this.openFriendPickerModal(data.score);
+          };
+        } else {
+          goChFriendsBtn.classList.add('hidden');
+        }
       }
+    } else {
+      // Hide challenge button, show guest CTA
+      if (goChFriendsBtn) goChFriendsBtn.classList.add('hidden');
+      if (goGuestCta) goGuestCta.classList.remove('hidden');
     }
 
     // Challenge mode result banner & retry button

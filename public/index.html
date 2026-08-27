@@ -455,6 +455,13 @@
         <div class="gameover-actions">
           <button id="retry-challenge-btn" class="btn btn-challenge btn-full hidden" style="margin-bottom: 8px;">🔄 RETRY CHALLENGE</button>
           <button id="go-challenge-friends-btn" class="btn btn-primary btn-full" style="margin-bottom: 8px; font-size: 0.88rem;">⚔️ Challenge Friends with this Match</button>
+          <div id="go-guest-cta" class="go-guest-cta hidden">
+            <div class="go-guest-cta-text">
+              <span class="go-guest-cta-title">💾 Save your score & challenge friends!</span>
+              <span class="go-guest-cta-sub">Register free — compete with friends, track your best scores, and send challenges.</span>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="uiManager.closeModal(uiManager.gameOverModal); uiManager.openAuthModal();">REGISTER / SIGN IN</button>
+          </div>
           <button id="restart-btn" class="btn btn-yellow-play btn-full">PLAY AGAIN</button>
           <button id="home-from-gameover-btn" class="btn btn-secondary btn-full">GO HOME</button>
         </div>

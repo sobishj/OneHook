@@ -1221,6 +1221,37 @@ html, body {
   gap: 12px;
 }
 
+/* Guest CTA in Game Over modal */
+.go-guest-cta {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #7dd3fc;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.go-guest-cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.go-guest-cta-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.go-guest-cta-sub {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
 /* Profile Card Component */
 .profile-card {
   background: #e0f2fe;
