@@ -29,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
@@ -42,24 +42,253 @@
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
-    <!-- Main Portal Navigation Header -->
-    <header id="portal-nav" class="portal-navbar">
-      <div class="portal-nav-brand" id="nav-brand-logo">
-        <span class="portal-logo-icon">🎮</span>
-        <span class="portal-logo-title">SPRINT<small>GAMES</small></span>
-      </div>
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
 
-      <div class="portal-nav-actions">
-        <button id="pwa-install-btn" class="btn btn-nav-item btn-install-highlight hidden" title="Install App on Phone / PC">📲 Install App</button>
-        <button id="open-leaderboard-btn" class="btn btn-nav-item">🏆 Leaderboard</button>
-        <button id="open-challenges-btn" class="btn btn-nav-item">⚔️ Challenges <span id="challenges-pending-badge" class="nav-badge hidden">0</span></button>
-        <button id="open-friends-btn" class="btn btn-nav-item">👥 Friends <span id="friends-pending-badge" class="nav-badge hidden">0</span></button>
-        <button id="user-profile-badge" class="btn btn-nav-item">👤 Sign In/ Sign Up</button>
-        <button id="audio-toggle-btn-nav" class="btn btn-nav-icon" title="Toggle Sound">🔊</button>
-      </div>
-    </header>
+    <!-- Main Dashboard Application Layout -->
+    <div id="home-screen" class="dashboard-layout">
+      <!-- Left Sidebar Navigation -->
+      <aside id="sidebar-nav" class="sidebar-container">
+        <div class="sidebar-top">
+          <div class="sidebar-brand" id="nav-brand-logo">
+            <span class="sidebar-logo-icon">🎮</span>
+            <span class="sidebar-logo-title">SPRINT<br><small>GAMES</small></span>
+          </div>
 
-    <!-- In-Game HUD Header -->
+          <nav class="sidebar-menu">
+            <button id="nav-item-home" class="sidebar-nav-btn active">
+              <span class="nav-btn-icon">🏠</span>
+              <span class="nav-btn-label">Home</span>
+            </button>
+            <button id="nav-item-friends" class="sidebar-nav-btn">
+              <span class="nav-btn-icon">👥</span>
+              <span class="nav-btn-label">Friends</span>
+              <span id="friends-pending-badge" class="sidebar-nav-badge hidden">0</span>
+            </button>
+            <button id="nav-item-profile" class="sidebar-nav-btn">
+              <span class="nav-btn-icon">👤</span>
+              <div class="sidebar-profile-col">
+                <span class="nav-btn-label">My Profile</span>
+                <span id="sidebar-best-score" class="sidebar-best-sub">Best: 0</span>
+              </div>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Bottom User Card in Sidebar -->
+        <div id="sidebar-user-card" class="sidebar-user-widget">
+          <div class="user-avatar-ring">
+            <span id="sidebar-user-avatar" class="user-avatar-emoji">🤖</span>
+          </div>
+          <div class="user-info-text">
+            <span id="sidebar-username" class="user-display-name">Guest</span>
+            <span id="sidebar-user-level" class="user-level-tag">Level 1</span>
+          </div>
+          <span class="user-chevron">›</span>
+        </div>
+      </aside>
+
+      <!-- Main Portal Content Viewport -->
+      <main class="dashboard-main">
+        <!-- Floating Visual Accents -->
+        <div class="decorative-hook-wrap" aria-hidden="true">
+          <div class="hook-line"></div>
+          <div class="hook-svg">🪝</div>
+        </div>
+        <div class="decorative-pufferfish" aria-hidden="true">🐡</div>
+
+        <!-- Top Utilities Header Row -->
+        <div class="dashboard-topbar">
+          <div class="dashboard-topbar-left">
+            <!-- Mobile Menu Toggle Button -->
+            <button id="mobile-sidebar-toggle" class="btn-icon-round mobile-only-btn" title="Toggle Menu">☰</button>
+          </div>
+          <div class="dashboard-topbar-right">
+            <button id="pwa-install-btn" class="btn-top-install hidden" title="Install App">📥 Install App</button>
+            <button id="audio-toggle-btn-nav" class="btn-icon-round" title="Toggle Sound">🔊</button>
+          </div>
+        </div>
+
+        <!-- Section Header: Play & Compete -->
+        <div class="hub-header-area">
+          <h1 class="hub-main-title">Play & Compete</h1>
+          <p class="hub-main-sub">Choose a game and start competing!</p>
+        </div>
+
+        <!-- Games Selection Carousel / Row -->
+        <div id="games-grid" class="games-carousel">
+          <!-- Rendered dynamically via GAMES_DATA -->
+        </div>
+
+        <!-- Selected Game Details & Actions Panel (Bottom Section) -->
+        <section id="game-details-panel" class="game-details-panel">
+          <!-- Panel Header -->
+          <div class="panel-header">
+            <div class="panel-header-left">
+              <img id="panel-game-thumb" src="/assets/one_hook_cover.jpg" alt="Selected Game" class="panel-game-thumb">
+              <div class="panel-title-wrap">
+                <h2 id="panel-game-title" class="panel-game-title">One Hook</h2>
+                <p id="panel-game-sub" class="panel-game-sub">Drop the hook, catch fish, and go deeper!</p>
+              </div>
+            </div>
+            <div class="panel-header-right">
+              <button id="panel-share-btn" class="btn-panel-action"><span class="action-icon">↗</span> Share</button>
+              <button id="panel-fav-btn" class="btn-panel-action btn-fav" title="Favorite">♡</button>
+            </div>
+          </div>
+
+          <!-- Panel Tabs Navigation -->
+          <div class="panel-tabs-bar">
+            <button id="panel-tab-play" class="panel-tab active" data-tab="play">
+              <span class="tab-icon">🎮</span> Play
+            </button>
+            <button id="panel-tab-leaderboard" class="panel-tab" data-tab="leaderboard">
+              <span class="tab-icon">🏆</span> Leaderboard
+            </button>
+            <button id="panel-tab-challenges" class="panel-tab" data-tab="challenges">
+              <span class="tab-icon">🎯</span> Challenges
+            </button>
+          </div>
+
+          <!-- Tab Content Views -->
+          <div class="panel-content-area">
+            <!-- 1. Play Tab (3-Column Overview as shown in design image) -->
+            <div id="panel-view-play" class="panel-view">
+              <div class="play-cards-grid">
+                <!-- Column 1: Your Best Score -->
+                <div class="play-subcard card-best-score">
+                  <span class="subcard-title">Your Best Score</span>
+                  <div class="best-score-display-row">
+                    <div class="best-score-number-group">
+                      <span class="trophy-emoji">🏆</span>
+                      <span id="panel-best-score-num" class="best-score-number">0</span>
+                    </div>
+                    <div class="medallion-badge-wrapper">
+                      <div class="medallion-seal">
+                        <span class="medallion-symbol">🐟</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button id="panel-play-now-btn" class="btn-orange-play-now">
+                    <span class="play-icon-glyph">▶</span> Play Now
+                  </button>
+                  <div class="subcard-tip-footer">
+                    <span class="tip-bulb-icon">💡</span>
+                    <span id="panel-game-tip-text" class="tip-text">Tips: Bigger fish are deeper!</span>
+                  </div>
+                </div>
+
+                <!-- Column 2: Leaderboard Snippet -->
+                <div class="play-subcard card-leaderboard">
+                  <div class="subcard-header-row">
+                    <span class="subcard-title">Leaderboard</span>
+                    <button id="panel-lb-view-all-btn" class="subcard-link-action">View All</button>
+                  </div>
+                  <div class="time-filter-pills">
+                    <button class="time-pill-btn active" data-time="today">Today</button>
+                    <button class="time-pill-btn" data-time="thisWeek">This Week</button>
+                    <button class="time-pill-btn" data-time="allTime">All Time</button>
+                  </div>
+                  <div id="panel-lb-rows-container" class="leaderboard-rows-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Column 3: Challenges & Levels Progression Snippet -->
+                <div class="play-subcard card-challenges">
+                  <div class="subcard-header-row">
+                    <span class="subcard-title">Challenges</span>
+                    <button id="panel-ch-view-all-btn" class="subcard-link-action">View All</button>
+                  </div>
+                  <div id="panel-ch-rows-container" class="challenges-rows-list">
+                    <!-- Populated dynamically with level progression & challenges -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Full Leaderboard Tab View -->
+            <div id="panel-view-leaderboard" class="panel-view hidden">
+              <div class="full-lb-view-header">
+                <div class="lb-scope-tabs">
+                  <button id="panel-full-lb-global-tab" class="scope-tab-btn active">🌐 Global Top Scores</button>
+                  <button id="panel-full-lb-friends-tab" class="scope-tab-btn">👥 Friends Ranking</button>
+                </div>
+                <div class="full-lb-time-pills">
+                  <button class="time-pill-btn active" data-full-time="today">Today</button>
+                  <button class="time-pill-btn" data-full-time="thisWeek">This Week</button>
+                  <button class="time-pill-btn" data-full-time="allTime">All Time</button>
+                </div>
+              </div>
+              <div id="panel-full-lb-container" class="full-lb-container">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- 3. Full Challenges & Friend Challenge Hub Tab View -->
+            <div id="panel-view-challenges" class="panel-view hidden">
+              <!-- Hero Challenge Card -->
+              <div class="panel-ch-hero-card">
+                <div class="panel-ch-hero-left">
+                  <span class="panel-ch-hero-lbl">YOUR BEST SCORE</span>
+                  <span id="panel-ch-hero-score" class="panel-ch-hero-val">0 pts</span>
+                </div>
+                <button id="panel-ch-hero-btn" class="btn btn-yellow-play">⚔️ Challenge a Friend</button>
+              </div>
+
+              <!-- Challenge Sub-Tabs -->
+              <div class="panel-ch-subtabs-bar">
+                <button id="ch-subtab-friends" class="scope-tab-btn active" data-ch-tab="friends">👥 Challenge Friends</button>
+                <button id="ch-subtab-incoming" class="scope-tab-btn" data-ch-tab="incoming">📥 Incoming <span id="panel-ch-incoming-badge" class="sidebar-nav-badge hidden">0</span></button>
+                <button id="ch-subtab-won" class="scope-tab-btn" data-ch-tab="won">🏆 Won <span id="panel-ch-won-badge" class="sidebar-nav-badge hidden">0</span></button>
+                <button id="ch-subtab-lost" class="scope-tab-btn" data-ch-tab="lost">❌ Lost / Retry <span id="panel-ch-lost-badge" class="sidebar-nav-badge hidden">0</span></button>
+                <button id="ch-subtab-sent" class="scope-tab-btn" data-ch-tab="sent">📤 Sent <span id="panel-ch-sent-badge" class="sidebar-nav-badge hidden">0</span></button>
+              </div>
+
+              <!-- Sub-Tab 1: Direct Friends List & Challenge -->
+              <div id="ch-subview-friends" class="ch-subview">
+                <div class="ch-friends-search-row">
+                  <input type="text" id="panel-ch-friend-search" placeholder="🔍 Search friends by name to challenge..." class="input-field" style="margin-bottom: 0;">
+                </div>
+                <div id="panel-ch-friends-grid" class="ch-friends-grid">
+                  <!-- Populated dynamically with friends & challenge buttons -->
+                </div>
+              </div>
+
+              <!-- Sub-Tab 2: Incoming Challenges -->
+              <div id="ch-subview-incoming" class="ch-subview hidden">
+                <div id="panel-ch-incoming-list" class="challenge-list-wrap">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Sub-Tab 3: Won Challenges -->
+              <div id="ch-subview-won" class="ch-subview hidden">
+                <div id="panel-ch-won-list" class="challenge-list-wrap">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Sub-Tab 4: Lost / Retry Challenges -->
+              <div id="ch-subview-lost" class="ch-subview hidden">
+                <div id="panel-ch-lost-list" class="challenge-list-wrap">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Sub-Tab 5: Sent Challenges -->
+              <div id="ch-subview-sent" class="ch-subview hidden">
+                <div id="panel-ch-sent-list" class="challenge-list-wrap">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- In-Game HUD Header (Active during gameplay) -->
     <header id="hud-screen" class="hidden">
       <div class="hud-bar">
         <!-- Left Side: Go Home Button & Best Score -->
@@ -99,34 +328,6 @@
       <!-- Challenge HUD Notice Banner -->
       <div id="challenge-hud-notice" class="challenge-notice hidden"></div>
     </header>
-
-    <!-- Main Home Page: Arcade Game Hub -->
-    <main id="home-screen" class="portal-container">
-      <!-- Featured Games Section Header -->
-      <div class="section-header">
-        <div class="section-title-wrap">
-          <div class="yellow-accent-bar"></div>
-          <h2 class="section-title">PLAY & COMPETE</h2>
-        </div>
-      </div>
-
-      <!-- Prominent Install Card on Home Screen -->
-      <div id="home-install-card" class="pwa-home-card hidden">
-        <div class="pwa-home-card-content">
-          <img src="/assets/icon-192.png" alt="SprintGames" class="pwa-home-card-icon">
-          <div class="pwa-home-card-text">
-            <h3 class="pwa-home-card-title">📲 Install SprintGames App</h3>
-            <p class="pwa-home-card-sub">Play full-screen, launch instantly from your home screen & play offline!</p>
-          </div>
-        </div>
-        <button id="home-install-btn" class="btn btn-yellow-play btn-home-install">INSTALL NOW</button>
-      </div>
-
-      <!-- Responsive Game Cards Grid -->
-      <div id="games-grid" class="games-grid">
-        <!-- Rendered dynamically from GAMES_DATA via GameCard component renderer -->
-      </div>
-    </main>
 
     <!-- Auth / Account Modal -->
     <div id="auth-modal" class="modal-backdrop hidden">
@@ -561,12 +762,12 @@
   </div>
 
   <!-- Game Scripts -->
-  <script src="js/sound.js"></script>
-  <script src="js/fish.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/games-data.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="/js/sound.js"></script>
+  <script src="/js/fish.js"></script>
+  <script src="/js/game.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/games-data.js"></script>
+  <script src="/js/ui.js"></script>
 
   <script>
     // Initialize Game Instance

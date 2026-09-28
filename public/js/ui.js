@@ -28,6 +28,16 @@ class UIManager {
     this.hudScreen = document.getElementById('hud-screen');
     this.portalNav = document.getElementById('portal-nav');
 
+    // Dashboard State
+    this.selectedGameId = 'one-hook';
+    this.selectedPanelTab = 'play';
+    this.selectedLbTime = 'today';
+    this.selectedFullLbScope = 'global';
+    this.selectedFullLbTime = 'today';
+    this.selectedChSubTab = 'friends';
+    this.cachedFriendsForPanel = [];
+    this.favoritedGames = new Set(['one-hook']);
+
     // HUD Elements
     this.hudBest = document.getElementById('hud-best');
     this.hudScore = document.getElementById('hud-score');
@@ -85,6 +95,7 @@ class UIManager {
     this.initListeners();
     this.initPWA();
     this.renderFeaturedGames();
+    this.renderGameDetailsPanel();
     this.initRouting();
   }
 
@@ -95,12 +106,169 @@ class UIManager {
       brandLogo.addEventListener('click', () => this.showHomeScreen());
     }
 
+    // Sidebar Navigation Buttons
+    const navHome = document.getElementById('nav-item-home');
+    if (navHome) {
+      navHome.addEventListener('click', () => this.showHomeScreen());
+    }
+
+    const navFriends = document.getElementById('nav-item-friends');
+    if (navFriends) {
+      navFriends.addEventListener('click', () => this.openFriendsModal('list'));
+    }
+
+    const navProfile = document.getElementById('nav-item-profile');
+    if (navProfile) {
+      navProfile.addEventListener('click', () => this.openAuthModal());
+    }
+
+    const sidebarUserCard = document.getElementById('sidebar-user-card');
+    if (sidebarUserCard) {
+      sidebarUserCard.addEventListener('click', () => this.openAuthModal());
+    }
+
+    // Mobile Sidebar Toggle & Backdrop
+    const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+    const sidebarEl = document.getElementById('sidebar-nav');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+    const toggleSidebar = (forceClose = false) => {
+      if (!sidebarEl) return;
+      if (forceClose) {
+        sidebarEl.classList.remove('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.add('hidden');
+      } else {
+        const isOpen = sidebarEl.classList.toggle('open');
+        if (sidebarBackdrop) {
+          if (isOpen) sidebarBackdrop.classList.remove('hidden');
+          else sidebarBackdrop.classList.add('hidden');
+        }
+      }
+    };
+
+    if (mobileToggle) {
+      mobileToggle.addEventListener('click', () => toggleSidebar());
+    }
+
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener('click', () => toggleSidebar(true));
+    }
+
+    // Auto-close sidebar drawer when navigating on mobile
+    [navHome, navFriends, navProfile].forEach(btn => {
+      if (btn) btn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) toggleSidebar(true);
+      });
+    });
+
+    // Game Details Panel Tabs
+    const tabPlay = document.getElementById('panel-tab-play');
+    if (tabPlay) tabPlay.addEventListener('click', () => this.setPanelTab('play'));
+
+    const tabLb = document.getElementById('panel-tab-leaderboard');
+    if (tabLb) tabLb.addEventListener('click', () => this.setPanelTab('leaderboard'));
+
+    const tabCh = document.getElementById('panel-tab-challenges');
+    if (tabCh) tabCh.addEventListener('click', () => this.setPanelTab('challenges'));
+
+    // View All Buttons inside subcards
+    const lbViewAll = document.getElementById('panel-lb-view-all-btn');
+    if (lbViewAll) lbViewAll.addEventListener('click', () => this.setPanelTab('leaderboard'));
+
+    const chViewAll = document.getElementById('panel-ch-view-all-btn');
+    if (chViewAll) chViewAll.addEventListener('click', () => this.setPanelTab('challenges'));
+
+    // Panel Action Buttons
+    const panelPlayNowBtn = document.getElementById('panel-play-now-btn');
+    if (panelPlayNowBtn) {
+      panelPlayNowBtn.addEventListener('click', () => this.launchGame(this.selectedGameId));
+    }
+
+    const panelShareBtn = document.getElementById('panel-share-btn');
+    if (panelShareBtn) {
+      panelShareBtn.addEventListener('click', () => this.handleShareGame());
+    }
+
+    const panelFavBtn = document.getElementById('panel-fav-btn');
+    if (panelFavBtn) {
+      panelFavBtn.addEventListener('click', () => this.handleToggleFavorite());
+    }
+
+    const panelChHeroBtn = document.getElementById('panel-ch-hero-btn');
+    if (panelChHeroBtn) {
+      panelChHeroBtn.addEventListener('click', () => this.openFriendPickerModal());
+    }
+
+    const btnCreateFriendCh = document.getElementById('btn-create-friend-challenge');
+    if (btnCreateFriendCh) {
+      btnCreateFriendCh.addEventListener('click', () => this.openFriendPickerModal());
+    }
+
+    // Challenges Subtabs Bar
+    document.querySelectorAll('.scope-tab-btn[data-ch-tab]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = e.currentTarget.dataset.chTab;
+        if (tab) this.setChallengesSubTab(tab);
+      });
+    });
+
+    // Panel Challenges Friend Search
+    const panelChSearch = document.getElementById('panel-ch-friend-search');
+    if (panelChSearch) {
+      panelChSearch.addEventListener('input', (e) => {
+        this.filterPanelFriends(e.target.value);
+      });
+    }
+
+    // Subcard Time Filter Pills
+    document.querySelectorAll('.time-pill-btn[data-time]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const timeVal = e.currentTarget.dataset.time;
+        this.selectedLbTime = timeVal;
+        document.querySelectorAll('.time-pill-btn[data-time]').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        this.renderPanelLeaderboardSnippet();
+      });
+    });
+
+    // Full Leaderboard Scope & Time Tabs
+    const fullGlobalTab = document.getElementById('panel-full-lb-global-tab');
+    if (fullGlobalTab) {
+      fullGlobalTab.addEventListener('click', () => {
+        this.selectedFullLbScope = 'global';
+        if (fullGlobalTab) fullGlobalTab.classList.add('active');
+        const friendsTab = document.getElementById('panel-full-lb-friends-tab');
+        if (friendsTab) friendsTab.classList.remove('active');
+        this.renderFullLeaderboardView();
+      });
+    }
+
+    const fullFriendsTab = document.getElementById('panel-full-lb-friends-tab');
+    if (fullFriendsTab) {
+      fullFriendsTab.addEventListener('click', () => {
+        this.selectedFullLbScope = 'friends';
+        if (fullFriendsTab) fullFriendsTab.classList.add('active');
+        if (fullGlobalTab) fullGlobalTab.classList.remove('active');
+        this.renderFullLeaderboardView();
+      });
+    }
+
+    document.querySelectorAll('.time-pill-btn[data-full-time]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const timeVal = e.currentTarget.dataset.fullTime;
+        this.selectedFullLbTime = timeVal;
+        document.querySelectorAll('.time-pill-btn[data-full-time]').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        this.renderFullLeaderboardView();
+      });
+    });
+
     // Exit HUD to Hub
     if (this.exitToHubBtn) {
       this.exitToHubBtn.addEventListener('click', () => this.showHomeScreen());
     }
 
-    // Header Navigation Buttons
+    // Header Navigation Buttons (for legacy / shortcuts)
     const openLbBtn = document.getElementById('open-leaderboard-btn');
     if (openLbBtn) openLbBtn.addEventListener('click', () => this.openLeaderboardModal('global'));
 
@@ -444,7 +612,7 @@ class UIManager {
   }
 
   // =========================================================================
-  // GAME HUB - REUSABLE GAME CARD COMPONENT RENDERER
+  // GAME HUB - REUSABLE GAME CARDS & GAME-SPECIFIC DETAILS PANEL
   // =========================================================================
   renderFeaturedGames() {
     const grid = document.getElementById('games-grid');
@@ -456,13 +624,38 @@ class UIManager {
   createGameCardHtml(game) {
     const isNew = game.badge === 'NEW';
     const badgeClass = isNew ? 'badge-new' : 'badge-soon';
-    
-    const playBtn = game.isPlayable
-      ? `<button class="btn btn-yellow-play" onclick="uiManager.launchGame('${game.id}')">PLAY</button>`
-      : `<button class="btn btn-yellow-play btn-disabled" disabled>SOON</button>`;
+    const isSelected = this.selectedGameId === game.id;
+    const selectedClass = isSelected ? 'selected' : '';
+
+    const stats = game.stats || { topScore: '--', players: '0', challengesCount: 0 };
+    const userBest = (game.id === 'one-hook' && window.apiClient && window.apiClient.user)
+      ? (window.apiClient.user.best_score || stats.topScore)
+      : stats.topScore;
+
+    const actionButtons = game.isPlayable
+      ? `
+        <div class="game-card-actions-row">
+          <button class="btn-card-action btn-play" onclick="event.stopPropagation(); uiManager.launchGame('${game.id}')">
+            ▶ Play Now
+          </button>
+          <div class="card-extra-actions">
+            <button class="btn-card-extra btn-extra-lb" onclick="event.stopPropagation(); uiManager.openLeaderboardModal('global')" title="Leaderboard">
+              🏆 Leaderboard
+            </button>
+            <button class="btn-card-extra btn-extra-ch" onclick="event.stopPropagation(); uiManager.openChallengesModal('incoming')" title="Challenges">
+              🎯 Challenges
+            </button>
+          </div>
+        </div>
+      `
+      : `
+        <div class="game-card-actions-row">
+          <button class="btn-card-action btn-soon" disabled>Coming Soon</button>
+        </div>
+      `;
 
     return `
-      <article class="game-card" data-game-id="${game.id}">
+      <article class="game-card ${selectedClass}" data-game-id="${game.id}" onclick="uiManager.selectGame('${game.id}')">
         <div class="game-card-art-wrap">
           <img src="${game.image}" alt="${game.title}" class="game-card-art" loading="lazy">
           <span class="game-card-badge ${badgeClass}">${game.badge}</span>
@@ -470,12 +663,753 @@ class UIManager {
         <div class="game-card-body">
           <h3 class="game-card-title">${game.title}</h3>
           <p class="game-card-desc">${game.description}</p>
+          <div class="game-stats-row">
+            <div class="stat-item">
+              <span>🏆</span>
+              <span class="stat-val">${userBest}</span>
+              <small style="color: #64748b; margin-left: 2px;">Top Score</small>
+            </div>
+            <div class="stat-item">
+              <span>👥</span>
+              <span class="stat-val">${stats.players}</span>
+              <small style="color: #64748b; margin-left: 2px;">Players</small>
+            </div>
+            <div class="stat-item">
+              <span>🎯</span>
+              <span class="stat-val">${stats.challengesCount}</span>
+              <small style="color: #64748b; margin-left: 2px;">Challenges</small>
+            </div>
+          </div>
           <div class="game-card-actions">
-            ${playBtn}
+            ${actionButtons}
           </div>
         </div>
       </article>
     `;
+  }
+
+  selectGame(gameId) {
+    this.selectedGameId = gameId;
+    this.renderFeaturedGames();
+    this.renderGameDetailsPanel();
+  }
+
+  setPanelTab(tabName) {
+    this.selectedPanelTab = tabName;
+
+    // Update tab header buttons
+    const tabs = ['play', 'leaderboard', 'challenges'];
+    tabs.forEach(t => {
+      const btn = document.getElementById(`panel-tab-${t}`);
+      if (btn) {
+        if (t === tabName) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+
+      const view = document.getElementById(`panel-view-${t}`);
+      if (view) {
+        if (t === tabName) view.classList.remove('hidden');
+        else view.classList.add('hidden');
+      }
+    });
+
+    // Render corresponding tab view
+    if (tabName === 'play') {
+      this.renderPanelPlayView();
+    } else if (tabName === 'leaderboard') {
+      this.renderFullLeaderboardView();
+    } else if (tabName === 'challenges') {
+      this.renderFullChallengesView();
+    }
+  }
+
+  renderGameDetailsPanel() {
+    const game = window.GAMES_DATA ? window.GAMES_DATA.find(g => g.id === this.selectedGameId) : null;
+    if (!game) return;
+
+    // Header updates
+    const thumbEl = document.getElementById('panel-game-thumb');
+    if (thumbEl) thumbEl.src = game.image;
+
+    const titleEl = document.getElementById('panel-game-title');
+    if (titleEl) titleEl.textContent = game.title;
+
+    const subEl = document.getElementById('panel-game-sub');
+    if (subEl) subEl.textContent = game.subtitle || game.description;
+
+    const favBtn = document.getElementById('panel-fav-btn');
+    if (favBtn) {
+      if (this.favoritedGames.has(game.id)) {
+        favBtn.classList.add('active');
+        favBtn.innerHTML = '❤️';
+      } else {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '♡';
+      }
+    }
+
+    // Play view & full views
+    this.renderPanelPlayView();
+    if (this.selectedPanelTab === 'leaderboard') {
+      this.renderFullLeaderboardView();
+    } else if (this.selectedPanelTab === 'challenges') {
+      this.renderFullChallengesView();
+    }
+  }
+
+  renderPanelPlayView() {
+    const game = window.GAMES_DATA ? window.GAMES_DATA.find(g => g.id === this.selectedGameId) : null;
+    if (!game) return;
+
+    // 1. Your Best Score
+    const bestNumEl = document.getElementById('panel-best-score-num');
+    let userScore = 0;
+    if (window.apiClient && window.apiClient.user && game.id === 'one-hook') {
+      userScore = window.apiClient.user.best_score || 0;
+    } else {
+      userScore = parseInt(localStorage.getItem('onehook_best_score') || '0', 10);
+    }
+    if (bestNumEl) bestNumEl.textContent = userScore.toLocaleString();
+
+    const playBtn = document.getElementById('panel-play-now-btn');
+    if (playBtn) {
+      if (game.isPlayable) {
+        playBtn.innerHTML = `<span class="play-icon-glyph">▶</span> Play Now`;
+        playBtn.removeAttribute('disabled');
+        playBtn.style.opacity = '1';
+        playBtn.style.cursor = 'pointer';
+      } else {
+        playBtn.innerHTML = `Coming Soon`;
+        playBtn.setAttribute('disabled', 'true');
+        playBtn.style.opacity = '0.6';
+        playBtn.style.cursor = 'not-allowed';
+      }
+    }
+
+    // 2. Leaderboard Snippet
+    this.renderPanelLeaderboardSnippet();
+
+    // 3. Challenges / Level Progression Snippet
+    this.renderPanelChallengesSnippet();
+  }
+
+  async renderPanelLeaderboardSnippet() {
+    const container = document.getElementById('panel-lb-rows-container');
+    if (!container) return;
+
+    container.innerHTML = `<div class="loading-spinner" style="padding: 10px; font-size: 0.8rem; color: #64748b; text-align: center;">Loading leaderboard...</div>`;
+
+    const game = window.GAMES_DATA ? window.GAMES_DATA.find(g => g.id === this.selectedGameId) : null;
+    if (!game || !game.isPlayable) {
+      container.innerHTML = `<div style="padding: 14px; font-size: 0.8rem; color: #64748b; text-align: center;">Leaderboard opens when game launches.</div>`;
+      return;
+    }
+
+    try {
+      const res = await window.apiClient.getGlobalLeaderboard();
+      const list = res.leaderboard || [];
+
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding: 14px; font-size: 0.8rem; color: #64748b; text-align: center;">No scores recorded yet. Be the first!</div>`;
+        return;
+      }
+
+      const loggedUser = window.apiClient ? window.apiClient.user : null;
+      let html = '';
+      list.slice(0, 4).forEach((item, index) => {
+        let rankIcon = `#${index + 1}`;
+        if (index === 0) rankIcon = '🥇';
+        else if (index === 1) rankIcon = '🥈';
+        else if (index === 2) rankIcon = '🥉';
+
+        const isYou = loggedUser && item.username.toLowerCase() === loggedUser.username.toLowerCase();
+        const displayName = isYou ? `${item.username} (You)` : item.username;
+        const rowClass = isYou ? 'lb-snippet-row user-row' : 'lb-snippet-row';
+
+        html += `
+          <div class="${rowClass}">
+            <div class="lb-snippet-left">
+              <span class="lb-rank-badge">${rankIcon}</span>
+              <span class="lb-user-name">${displayName}</span>
+            </div>
+            <span class="lb-user-score">${(item.best_score || item.score || 0).toLocaleString()}</span>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div style="padding: 10px; font-size: 0.78rem; color: #94a3b8; text-align: center;">Scores update after first game.</div>`;
+    }
+  }
+
+  renderPanelChallengesSnippet() {
+    const container = document.getElementById('panel-ch-rows-container');
+    if (!container) return;
+
+    const game = window.GAMES_DATA ? window.GAMES_DATA.find(g => g.id === this.selectedGameId) : null;
+    if (!game) return;
+
+    const challenges = game.challenges || [];
+    if (challenges.length === 0) {
+      container.innerHTML = `<div style="padding: 14px; font-size: 0.8rem; color: #64748b; text-align: center;">Challenges coming soon!</div>`;
+      return;
+    }
+
+    let html = '';
+    challenges.slice(0, 3).forEach(ch => {
+      const progressPercent = ch.max > 0 ? Math.min(100, Math.round((ch.progress / ch.max) * 100)) : 0;
+
+      html += `
+        <div class="ch-snippet-row">
+          <div class="ch-icon-box" style="background: ${ch.iconBg || '#0284c7'};">
+            ${ch.icon}
+          </div>
+          <div class="ch-details-col">
+            <div class="ch-title-row">
+              <span>${ch.title}</span>
+            </div>
+            <div class="ch-desc-text">${ch.desc}</div>
+            <div class="ch-progress-wrap">
+              <div class="ch-progress-bar">
+                <div class="ch-progress-fill" style="width: ${progressPercent}%;"></div>
+              </div>
+              <span class="ch-progress-text">${ch.progress}/${ch.max}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  async renderFullLeaderboardView() {
+    const container = document.getElementById('panel-full-lb-container');
+    if (!container) return;
+
+    const isFriends = this.selectedFullLbScope === 'friends';
+
+    if (isFriends && (!window.apiClient || !window.apiClient.user)) {
+      container.innerHTML = `
+        <div style="padding: 32px; text-align: center; color: #64748b;">
+          <p style="margin-bottom: 12px; font-size: 0.95rem; color: #0f172a; font-weight: 700;">Sign in to compete with your friends on the leaderboard!</p>
+          <button class="btn btn-primary btn-sm" onclick="uiManager.openAuthModal()">SIGN IN / REGISTER</button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `<div class="loading-spinner" style="padding: 24px; text-align: center; color: #64748b;">Loading leaderboard...</div>`;
+
+    try {
+      const res = isFriends
+        ? await window.apiClient.getFriendsLeaderboard()
+        : await window.apiClient.getGlobalLeaderboard();
+
+      const list = res.leaderboard || [];
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 32px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 6px;">🏆</div>
+            <strong style="color: #0f172a;">No scores recorded yet!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Play a game of One Hook to set the first score!</span>
+          </div>
+        `;
+        return;
+      }
+
+      const loggedUser = window.apiClient ? window.apiClient.user : null;
+      let html = `<table class="lb-table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-align: left;">
+            <th style="padding: 10px 14px;">RANK</th>
+            <th style="padding: 10px 14px;">PLAYER</th>
+            <th style="padding: 10px 14px; text-align: right;">BEST SCORE</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      list.forEach((item, index) => {
+        let rankIcon = `#${index + 1}`;
+        if (index === 0) rankIcon = '🥇 1';
+        else if (index === 1) rankIcon = '🥈 2';
+        else if (index === 2) rankIcon = '🥉 3';
+
+        const isYou = loggedUser && item.username.toLowerCase() === loggedUser.username.toLowerCase();
+        const displayName = isYou ? `${item.username} (YOU)` : item.username;
+        const rowStyle = isYou
+          ? 'background: #e0f2fe; font-weight: 800; color: #0369a1;'
+          : 'border-bottom: 1px solid #f1f5f9; color: #1e293b;';
+
+        html += `
+          <tr style="${rowStyle}">
+            <td style="padding: 10px 14px; font-weight: 800;">${rankIcon}</td>
+            <td style="padding: 10px 14px;">👤 ${displayName}</td>
+            <td style="padding: 10px 14px; text-align: right; font-weight: 800; color: #0284c7;">${(item.best_score || item.score || 0).toLocaleString()}</td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state" style="padding: 24px; text-align: center;">Failed to load leaderboard: ${err.message}</div>`;
+    }
+  }
+
+  renderFullChallengesView() {
+    const heroScoreEl = document.getElementById('panel-ch-hero-score');
+    let userBest = 0;
+    if (window.apiClient && window.apiClient.user) {
+      userBest = window.apiClient.user.best_score || 0;
+    } else {
+      userBest = parseInt(localStorage.getItem('onehook_best_score') || '0', 10);
+    }
+
+    if (heroScoreEl) {
+      heroScoreEl.textContent = `${userBest.toLocaleString()} pts`;
+    }
+
+    this.setChallengesSubTab(this.selectedChSubTab || 'friends');
+    this.refreshChallengeBadges();
+  }
+
+  async refreshChallengeBadges() {
+    if (!window.apiClient || !window.apiClient.user) return;
+    try {
+      const res = await window.apiClient.getChallengesList().catch(() => null);
+      if (!res) return;
+
+      const incomingBadge = document.getElementById('panel-ch-incoming-badge');
+      const incomingCount = (res.incoming || []).length;
+      if (incomingBadge) {
+        if (incomingCount > 0) {
+          incomingBadge.textContent = incomingCount;
+          incomingBadge.classList.remove('hidden');
+        } else {
+          incomingBadge.classList.add('hidden');
+        }
+      }
+
+      const wonBadge = document.getElementById('panel-ch-won-badge');
+      const wonCount = (res.won || []).length;
+      if (wonBadge) {
+        if (wonCount > 0) {
+          wonBadge.textContent = wonCount;
+          wonBadge.classList.remove('hidden');
+        } else {
+          wonBadge.classList.add('hidden');
+        }
+      }
+
+      const lostBadge = document.getElementById('panel-ch-lost-badge');
+      const lostCount = (res.lost || []).length;
+      if (lostBadge) {
+        if (lostCount > 0) {
+          lostBadge.textContent = lostCount;
+          lostBadge.classList.remove('hidden');
+        } else {
+          lostBadge.classList.add('hidden');
+        }
+      }
+
+      const sentBadge = document.getElementById('panel-ch-sent-badge');
+      const sentCount = (res.sent || []).length;
+      if (sentBadge) {
+        if (sentCount > 0) {
+          sentBadge.textContent = sentCount;
+          sentBadge.classList.remove('hidden');
+        } else {
+          sentBadge.classList.add('hidden');
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to refresh challenge badges:', err);
+    }
+  }
+
+  setChallengesSubTab(subTabName) {
+    this.selectedChSubTab = subTabName;
+
+    // Toggle sub-tab active classes
+    document.querySelectorAll('.panel-ch-subtabs-bar .scope-tab-btn').forEach(btn => {
+      if (btn.dataset.chTab === subTabName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Hide all subviews and show the selected one
+    document.querySelectorAll('#panel-view-challenges .ch-subview').forEach(view => {
+      view.classList.add('hidden');
+    });
+
+    const targetView = document.getElementById(`ch-subview-${subTabName}`);
+    if (targetView) targetView.classList.remove('hidden');
+
+    if (subTabName === 'friends') {
+      this.renderPanelFriendsSubTab();
+    } else if (subTabName === 'incoming') {
+      this.renderPanelIncomingSubTab();
+    } else if (subTabName === 'won') {
+      this.renderPanelWonSubTab();
+    } else if (subTabName === 'lost') {
+      this.renderPanelLostSubTab();
+    } else if (subTabName === 'sent') {
+      this.renderPanelSentSubTab();
+    }
+  }
+
+  async renderPanelFriendsSubTab() {
+    const grid = document.getElementById('panel-ch-friends-grid');
+    if (!grid) return;
+
+    if (!window.apiClient || !window.apiClient.user) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: span 2; padding: 28px; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">👤</div>
+          <strong style="color: #0f172a;">Sign in to Challenge Friends</strong><br>
+          <span style="color: #64748b; font-size: 0.85rem;">Create a player profile to add friends, send challenges, and compete!</span><br>
+          <button class="btn btn-sm btn-primary" onclick="uiManager.openAuthModal()" style="margin-top: 12px;">Sign In / Register</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = `<div class="loading-spinner" style="grid-column: span 2; padding: 20px; text-align: center; color: #64748b;">Loading friends...</div>`;
+
+    try {
+      const [fRes, chRes] = await Promise.all([
+        window.apiClient.getFriendsList().catch(() => ({ friends: [] })),
+        window.apiClient.getChallengesList().catch(() => ({ challenges: [] }))
+      ]);
+
+      const friendsList = fRes.friends || [];
+      const challengesList = chRes.challenges || [];
+
+      this.cachedFriendsForPanel = friendsList;
+      this.cachedChallengesForPanel = challengesList;
+      this.renderPanelFriendsList(friendsList);
+    } catch (err) {
+      grid.innerHTML = `<div class="error-state" style="grid-column: span 2;">Failed to load friends: ${err.message}</div>`;
+    }
+  }
+
+  renderPanelFriendsList(friends) {
+    const grid = document.getElementById('panel-ch-friends-grid');
+    if (!grid) return;
+
+    if (!friends || friends.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column: span 2; padding: 28px; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">👥</div>
+          <strong style="color: #0f172a;">No friends added yet!</strong><br>
+          <span style="color: #64748b; font-size: 0.85rem;">Find friends by username to challenge them to a match!</span><br>
+          <button class="btn btn-sm btn-primary" onclick="uiManager.openFriendsModal('find')" style="margin-top: 12px;">➕ Find & Add Friends</button>
+        </div>
+      `;
+      return;
+    }
+
+    const myBest = (window.apiClient && window.apiClient.user)
+      ? (window.apiClient.user.best_score || 0)
+      : parseInt(localStorage.getItem('onehook_best_score') || '0', 10);
+
+    let html = '';
+    friends.forEach(f => {
+      const initials = (f.username || 'F').substring(0, 2).toUpperCase();
+      const bestScore = f.best_score || 0;
+      const isBeatMe = bestScore > myBest;
+
+      const isPending = (this.cachedChallengesForPanel || []).some(
+        ch => ch.opponent_id === f.id && ch.challenger_score === myBest && ch.status === 'PENDING'
+      );
+
+      let actionBtnHtml = '';
+      if (isPending) {
+        actionBtnHtml = `<button class="btn btn-sm" disabled style="background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; cursor: not-allowed;">⏳ Pending</button>`;
+      } else if (isBeatMe && myBest > 0) {
+        actionBtnHtml = `<button class="btn btn-sm btn-yellow-play" onclick="uiManager.selectFriendToChallenge('${f.id}', '${f.username}', ${bestScore})">🔥 Beat Me</button>`;
+      } else {
+        actionBtnHtml = `<button class="btn btn-sm btn-challenge" onclick="uiManager.selectFriendToChallenge('${f.id}', '${f.username}', ${bestScore})">⚔️ Challenge</button>`;
+      }
+
+      html += `
+        <div class="panel-friend-card">
+          <div class="panel-friend-info">
+            <div class="panel-friend-avatar">${initials}</div>
+            <div class="panel-friend-details">
+              <span class="panel-friend-name">${f.username}</span>
+              <span class="panel-friend-score">🏆 Best: <strong>${bestScore.toLocaleString()} pts</strong></span>
+            </div>
+          </div>
+          <div>
+            ${actionBtnHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  }
+
+  filterPanelFriends(query) {
+    if (!this.cachedFriendsForPanel) return;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+      this.renderPanelFriendsList(this.cachedFriendsForPanel);
+      return;
+    }
+    const filtered = this.cachedFriendsForPanel.filter(f =>
+      (f.username || '').toLowerCase().includes(q)
+    );
+    this.renderPanelFriendsList(filtered);
+  }
+
+  async renderPanelIncomingSubTab() {
+    const container = document.getElementById('panel-ch-incoming-list');
+    if (!container) return;
+
+    if (!window.apiClient || !window.apiClient.user) {
+      container.innerHTML = `
+        <div style="padding: 28px; text-align: center; color: #64748b;">
+          <p style="margin-bottom: 10px; color: #0f172a; font-weight: 700;">Sign in to see incoming challenges from friends!</p>
+          <button class="btn btn-primary btn-sm" onclick="uiManager.openAuthModal()">SIGN IN / REGISTER</button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `<div class="loading-spinner">Loading incoming challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      const incoming = res.incoming || [];
+
+      if (incoming.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 24px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 6px;">🛡️</div>
+            <strong style="color: #0f172a;">No unattempted incoming challenges!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">When friends challenge your score, they'll show up here!</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      incoming.forEach(ch => {
+        html += `
+          <div class="panel-friend-card" style="border-left: 4px solid #0284c7;">
+            <div class="panel-friend-info">
+              <div class="panel-friend-avatar" style="background: #fef3c7; color: #d97706; border-color: #f59e0b;">⚔️</div>
+              <div class="panel-friend-details">
+                <span class="panel-friend-name">From <strong>${ch.challengerUsername}</strong></span>
+                <span class="panel-friend-score">Score to beat: <strong style="color: #0284c7; font-size: 1rem;">${ch.challengerScore.toLocaleString()} pts</strong></span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-yellow-play" onclick="uiManager.startIncomingChallenge('${ch.id}', '${ch.challengerUsername}', ${ch.challengerScore})">
+              ⚔️ ACCEPT & PLAY
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load incoming challenges: ${err.message}</div>`;
+    }
+  }
+
+  async renderPanelWonSubTab() {
+    const container = document.getElementById('panel-ch-won-list');
+    if (!container) return;
+
+    if (!window.apiClient || !window.apiClient.user) {
+      container.innerHTML = `<div style="padding: 24px; text-align: center; color: #64748b;">Sign in to view your challenge victories!</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="loading-spinner">Loading won challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      const won = res.won || [];
+
+      if (won.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 24px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 6px;">🏆</div>
+            <strong style="color: #0f172a;">No won challenges yet!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Accept incoming challenges and beat their target scores to earn victories!</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      won.forEach(ch => {
+        html += `
+          <div class="panel-friend-card" style="border-left: 4px solid #10b981;">
+            <div class="panel-friend-info">
+              <div class="panel-friend-avatar" style="background: #d1fae5; color: #059669; border-color: #34d399;">🏆</div>
+              <div class="panel-friend-details">
+                <span class="panel-friend-name">Victory vs <strong>${ch.challengerUsername}</strong></span>
+                <span class="panel-friend-score">Your Score: <strong style="color: #059669;">${ch.opponentScore ? ch.opponentScore.toLocaleString() : 'Won'} pts</strong> (Beat ${ch.challengerScore.toLocaleString()})</span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-challenge" onclick="uiManager.openSendChallengeModal('${ch.challengerId}', '${ch.challengerUsername}')">
+              ⚔️ Rematch
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load won challenges: ${err.message}</div>`;
+    }
+  }
+
+  async renderPanelLostSubTab() {
+    const container = document.getElementById('panel-ch-lost-list');
+    if (!container) return;
+
+    if (!window.apiClient || !window.apiClient.user) {
+      container.innerHTML = `<div style="padding: 24px; text-align: center; color: #64748b;">Sign in to view your challenges!</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="loading-spinner">Loading lost challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      const lost = res.lost || [];
+
+      if (lost.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 24px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 6px;">✨</div>
+            <strong style="color: #0f172a;">No failed challenges!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">All your completed challenges were successful.</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      lost.forEach(ch => {
+        html += `
+          <div class="panel-friend-card" style="border-left: 4px solid #ef4444;">
+            <div class="panel-friend-info">
+              <div class="panel-friend-avatar" style="background: #fee2e2; color: #dc2626; border-color: #f87171;">❌</div>
+              <div class="panel-friend-details">
+                <span class="panel-friend-name">Lost vs <strong>${ch.challengerUsername}</strong></span>
+                <span class="panel-friend-score">Target to beat: <strong style="color: #ef4444;">${ch.challengerScore.toLocaleString()} pts</strong></span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-yellow-play" onclick="uiManager.startIncomingChallenge('${ch.id}', '${ch.challengerUsername}', ${ch.challengerScore})">
+              🔄 Retry Now
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load lost challenges: ${err.message}</div>`;
+    }
+  }
+
+  async renderPanelSentSubTab() {
+    const container = document.getElementById('panel-ch-sent-list');
+    if (!container) return;
+
+    if (!window.apiClient || !window.apiClient.user) {
+      container.innerHTML = `<div style="padding: 24px; text-align: center; color: #64748b;">Sign in to view sent challenges!</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="loading-spinner">Loading sent challenges...</div>`;
+
+    try {
+      const res = await window.apiClient.getChallengesList();
+      const sent = res.sent || [];
+
+      if (sent.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="padding: 24px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 6px;">📤</div>
+            <strong style="color: #0f172a;">No sent challenges pending!</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Challenge your friends from the Friends tab to see them here.</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      sent.forEach(ch => {
+        html += `
+          <div class="panel-friend-card">
+            <div class="panel-friend-info">
+              <div class="panel-friend-avatar">📤</div>
+              <div class="panel-friend-details">
+                <span class="panel-friend-name">To <strong>${ch.opponentUsername}</strong></span>
+                <span class="panel-friend-score">Your Score: <strong>${ch.challengerScore.toLocaleString()} pts</strong></span>
+              </div>
+            </div>
+            <span class="status-pill status-pending">⏳ Waiting</span>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = `<div class="error-state">Failed to load sent challenges: ${err.message}</div>`;
+    }
+  }
+
+  handleShareGame() {
+    const game = window.GAMES_DATA ? window.GAMES_DATA.find(g => g.id === this.selectedGameId) : null;
+    const title = game ? game.title : 'SprintGames';
+    const shareUrl = window.location.origin + (game ? game.route : '/');
+
+    if (navigator.share) {
+      navigator.share({
+        title: `Play ${title} on SprintGames!`,
+        text: `Check out ${title} - can you beat my high score?`,
+        url: shareUrl
+      }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        this.showToast(`🔗 Link copied to clipboard for ${title}!`, 'success');
+      }).catch(() => {
+        this.showToast(`Share URL: ${shareUrl}`, 'info');
+      });
+    } else {
+      this.showToast(`Share URL: ${shareUrl}`, 'info');
+    }
+  }
+
+  handleToggleFavorite() {
+    const favBtn = document.getElementById('panel-fav-btn');
+    if (this.favoritedGames.has(this.selectedGameId)) {
+      this.favoritedGames.delete(this.selectedGameId);
+      if (favBtn) {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '♡';
+      }
+      this.showToast('Removed from favorites', 'info');
+    } else {
+      this.favoritedGames.add(this.selectedGameId);
+      if (favBtn) {
+        favBtn.classList.add('active');
+        favBtn.innerHTML = '❤️';
+      }
+      this.showToast('Added to your favorite games! ⭐', 'success');
+    }
   }
 
   launchGame(gameId, challengeContext = null) {
@@ -527,10 +1461,30 @@ class UIManager {
 
   refreshUserBadge() {
     const user = window.apiClient.user;
+    const sidebarNameEl = document.getElementById('sidebar-username');
+    const sidebarLevelEl = document.getElementById('sidebar-user-level');
+    const sidebarBestEl = document.getElementById('sidebar-best-score');
+
     if (user) {
       if (this.userBadge) {
         this.userBadge.innerHTML = `👤 <strong>${user.username}</strong> (Best: ${user.best_score || 0})`;
       }
+      if (sidebarNameEl) sidebarNameEl.textContent = user.username;
+      if (sidebarBestEl) sidebarBestEl.textContent = `Best: ${(user.best_score || 0).toLocaleString()}`;
+      
+      // Calculate dynamic level based on best score
+      let playerLevel = 1;
+      const score = user.best_score || 0;
+      if (score >= 2000) playerLevel = 15;
+      else if (score >= 1500) playerLevel = 12;
+      else if (score >= 1000) playerLevel = 10;
+      else if (score >= 500) playerLevel = 6;
+      else if (score >= 300) playerLevel = 4;
+      else if (score >= 150) playerLevel = 3;
+      else if (score >= 50) playerLevel = 2;
+      
+      if (sidebarLevelEl) sidebarLevelEl.textContent = `Level ${playerLevel}`;
+
       const profileBestEl = document.getElementById('profile-best-score-display');
       if (profileBestEl) {
         profileBestEl.textContent = (user.best_score || 0).toLocaleString();
@@ -539,9 +1493,18 @@ class UIManager {
         window.game.bestScore = user.best_score || 0;
       }
       this.checkPendingNotifications();
-    } else if (this.userBadge) {
-      this.userBadge.innerHTML = `👤 <span>Sign In/ Sign Up</span>`;
+    } else {
+      const localBest = parseInt(localStorage.getItem('onehook_best_score') || '0', 10);
+      if (this.userBadge) {
+        this.userBadge.innerHTML = `👤 <span>Sign In</span>`;
+      }
+      if (sidebarNameEl) sidebarNameEl.textContent = 'Guest';
+      if (sidebarLevelEl) sidebarLevelEl.textContent = 'Sign In';
+      if (sidebarBestEl) sidebarBestEl.textContent = `Best: ${localBest.toLocaleString()}`;
     }
+
+    this.renderFeaturedGames();
+    this.renderGameDetailsPanel();
   }
 
   async checkPendingNotifications() {
@@ -1133,7 +2096,7 @@ class UIManager {
 
     const container = document.getElementById('lb-list-container');
     if (!window.apiClient.user) {
-      container.innerHTML = `<div class="empty-state">Please sign in to view your friends leaderboard. <br><br> <button class="btn btn-secondary" onclick="uiManager.openAuthModal()">Sign In</button></div>`;
+      container.innerHTML = `<div class="empty-state">Please sign in to view your friends leaderboard. <br><br> <button class="btn btn-secondary" onclick="uiManager.closeModal(uiManager.leaderboardModal); uiManager.openAuthModal();">Sign In</button></div>`;
       return;
     }
 
