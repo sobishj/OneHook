@@ -44,17 +44,17 @@ const GAMES_DATA = [
     ]
   },
   {
-    id: "neon-drift",
-    title: "Neon Drift: Rivalry",
-    badge: "COMING SOON",
-    subtitle: "High-speed arcade racing in cyberpunk streets!",
-    description: "High-speed arcade racing through cyberpunk streets of the future. Drift and conquer!",
-    image: "/assets/cyber_runner_cover.jpg",
-    route: "/games/neon-drift",
-    isPlayable: false,
+    id: "star-quest",
+    title: "Star Quest",
+    badge: "NEW",
+    subtitle: "Cheer on your kids! Give daily stars for achievements.",
+    description: "Cheer on your kids! Give daily stars for achievements and unlock secret rewards together.",
+    image: "/assets/star_quest_cover.svg",
+    route: "/star-quest",
+    isPlayable: true,
     stats: {
-      topScore: "--",
-      players: "Coming Soon",
+      topScore: "-",
+      players: "Family",
       challengesCount: 0
     },
     challenges: []

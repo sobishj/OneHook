@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { handleStarQuest } from './routes/star-quest.js';
 
 const FALLBACK_JWT_SECRET = 'sprintgames_secret_key_2026_secure';
 
@@ -98,7 +99,105 @@ async function ensureSchema(env) {
           winner_id TEXT DEFAULT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-      `)
+      `),
+      // ---- Star Quest tables (mirrors migrations/0002_star_quest.sql) ----
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_family (
+          id TEXT PRIMARY KEY,
+          owner_user_id TEXT NOT NULL,
+          name TEXT,
+          pin_hash TEXT,
+          pin_salt TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_family_member (
+          id TEXT PRIMARY KEY,
+          family_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL CHECK (role IN ('OWNER','PARTNER')),
+          display_name TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE (family_id, user_id)
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_member_user ON sq_family_member(user_id)`),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_member_family ON sq_family_member(family_id)`),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_family_invite (
+          code TEXT PRIMARY KEY,
+          family_id TEXT NOT NULL,
+          created_by TEXT NOT NULL,
+          expires_at INTEGER NOT NULL,
+          used_by TEXT,
+          used_at DATETIME,
+          email TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_invite_family ON sq_family_invite(family_id)`),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_kid (
+          id TEXT PRIMARY KEY,
+          family_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          avatar TEXT NOT NULL,
+          color TEXT NOT NULL,
+          birthday TEXT,
+          show_numbers INTEGER NOT NULL DEFAULT 1,
+          avatar_photo_key TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_kid_family ON sq_kid(family_id)`),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_star_entry (
+          id TEXT PRIMARY KEY,
+          kid_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 3),
+          reason TEXT,
+          reason_icon TEXT,
+          praise_text TEXT,
+          praise_voice_key TEXT,
+          given_by_user_id TEXT NOT NULL,
+          seen_by_kid INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          deleted_at DATETIME
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_star_kid_date ON sq_star_entry(kid_id, date)`),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_goal (
+          id TEXT PRIMARY KEY,
+          kid_id TEXT NOT NULL,
+          target_stars INTEGER NOT NULL,
+          reward_secret TEXT,
+          reward_secret_emoji TEXT,
+          reward_secret_photo_key TEXT,
+          reward_hint TEXT,
+          reward_hint_emoji TEXT,
+          status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','UNLOCKED','REVEALED','REDEEMED')),
+          created_by TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          unlocked_at DATETIME,
+          revealed_at DATETIME,
+          redeemed_at DATETIME
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_goal_kid ON sq_goal(kid_id)`),
+      // ---- mirrors migrations/0003_star_quest_reasons.sql ----
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS sq_reason_preset (
+          id TEXT PRIMARY KEY,
+          family_id TEXT NOT NULL,
+          icon TEXT NOT NULL,
+          label TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+      env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_sq_reason_family ON sq_reason_preset(family_id)`)
     ]);
     schemaInitialized = true;
   } catch (err) {
@@ -205,6 +304,18 @@ export default {
       if (pathname.startsWith('/api/')) {
         await ensureSchema(env);
       }
+
+      // ----------------------------------------------------
+      // STAR QUEST ROUTES — fully delegated to src/routes/star-quest.js.
+      // Do NOT add inline /api/sq/* handlers here — this project once had
+      // both an inline block and this import simultaneously, with the
+      // inline block silently shadowing the import as dead code. Edit
+      // star-quest.js only.
+      // ----------------------------------------------------
+      if (pathname.startsWith('/api/sq/')) {
+        return handleStarQuest(request, env, pathname, method);
+      }
+
       // ----------------------------------------------------
       // AUTH ROUTES
       // ----------------------------------------------------

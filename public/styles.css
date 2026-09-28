@@ -227,8 +227,15 @@ html, body {
   -webkit-backdrop-filter: blur(8px);
   z-index: 150;
   display: flex;
-  align-items: center;
   justify-content: center;
+  /* overflow-y (safety net) + margin:auto on .modal-card below, instead of
+     align-items:center here: on some mobile browsers/webviews `vh` is
+     computed against a taller "layout" viewport than what's actually
+     visible, so a 90vh card can end up bigger than the real screen —
+     align-items:center would then clip it top AND bottom with no way to
+     reach the rest. This way the backdrop itself can always be scrolled
+     to reach every part of the card no matter how `vh` behaves. */
+  overflow-y: auto;
   padding: 20px;
   animation: fadeInModal 0.25s ease;
 }
@@ -251,6 +258,7 @@ html, body {
   max-width: 480px;
   box-shadow: 0 20px 50px rgba(2, 132, 199, 0.2);
   position: relative;
+  margin: auto 0;
   max-height: 90vh;
   max-height: 90dvh;
   overflow-y: auto;
@@ -844,32 +852,6 @@ html, body {
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;
-}
-
-/* Hanging Fishing Line & Hook */
-.decorative-hook-wrap {
-  position: absolute;
-  top: 0;
-  left: 54%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.hook-line {
-  width: 2px;
-  height: 70px;
-  background: linear-gradient(180deg, #94a3b8, #cbd5e1);
-  box-shadow: 0 0 4px rgba(148, 163, 184, 0.4);
-}
-
-.hook-svg {
-  font-size: 1.6rem;
-  transform: translateY(-8px);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
 }
 
 /* Floating Yellow Pufferfish */
@@ -2011,7 +1993,7 @@ html, body {
     max-width: 100%;
   }
 
-  .decorative-hook-wrap, .decorative-pufferfish {
+  .decorative-pufferfish {
     display: none;
   }
 
@@ -2298,76 +2280,6 @@ html, body {
   padding: 2px 7px;
   border-radius: 10px;
   margin-left: 4px;
-}
-
-/* ==========================================================================
-   MODAL DIALOGS
-   ========================================================================== */
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 100;
-}
-
-.modal-card {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  padding: 32px 28px;
-  max-height: 85vh;
-  overflow-y: auto;
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid rgba(186, 230, 253, 0.9);
-  box-shadow: 0 24px 60px rgba(2, 132, 199, 0.2);
-}
-
-.modal-card.modal-lg {
-  max-width: 540px;
-}
-
-
-
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 18px;
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.modal-close:hover {
-  color: #0f172a;
-}
-
-.modal-card h2 {
-  font-family: var(--font-heading);
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
-  color: #0f172a;
-}
-
-.modal-desc {
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  margin-bottom: 24px;
 }
 
 /* Profile Card & Info Box */
@@ -3687,6 +3599,7 @@ html, body {
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
     max-height: 90vh;
+    max-height: 90dvh;
     padding: 24px 18px 30px;
   }
 }

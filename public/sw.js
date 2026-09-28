@@ -1,5 +1,5 @@
 // SprintGames PWA Service Worker
-const CACHE_NAME = 'sprintgames-shell-v38';
+const CACHE_NAME = 'sprintgames-shell-v39';
 
 // Static application shell assets required for offline arcade play
 const STATIC_ASSETS = [
@@ -13,13 +13,20 @@ const STATIC_ASSETS = [
   '/js/game.js',
   '/js/games-data.js',
   '/js/ui.js',
+  '/star-quest.html',
+  '/star-quest.css',
+  '/js/star-quest-api.js',
+  '/js/star-quest-sounds.js',
+  '/js/star-quest-parent.js',
+  '/js/star-quest-kid.js',
+  '/js/star-quest.js',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
   '/assets/icon-maskable-512.png',
   '/assets/apple-touch-icon.png',
   '/assets/favicon.svg',
   '/assets/one_hook_cover.jpg',
-  '/assets/cyber_runner_cover.jpg',
+  '/assets/star_quest_cover.svg',
   '/assets/abyss_diver_cover.jpg'
 ];
 

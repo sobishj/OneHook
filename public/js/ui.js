@@ -632,12 +632,22 @@ class UIManager {
       ? (window.apiClient.user.best_score || stats.topScore)
       : stats.topScore;
 
+    // Star Quest lives on its own separate page (not an in-page panel like
+    // One Hook), so its card navigates via a normal link instead of
+    // uiManager.selectGame(). This is the ONLY place that branches on
+    // game.id in this function — everything else about the card template
+    // stays shared and untouched.
+    const isStarQuest = game.id === 'star-quest';
+    const playClick = isStarQuest ? "window.location.href='/star-quest'" : `uiManager.launchGame('${game.id}')`;
+    const cardClick = isStarQuest ? "window.location.href='/star-quest'" : `uiManager.selectGame('${game.id}')`;
+
     const actionButtons = game.isPlayable
       ? `
         <div class="game-card-actions-row">
-          <button class="btn-card-action btn-play" onclick="event.stopPropagation(); uiManager.launchGame('${game.id}')">
+          <button class="btn-card-action btn-play" onclick="event.stopPropagation(); ${playClick}">
             ▶ Play Now
           </button>
+          ${isStarQuest ? '' : `
           <div class="card-extra-actions">
             <button class="btn-card-extra btn-extra-lb" onclick="event.stopPropagation(); uiManager.openLeaderboardModal('global')" title="Leaderboard">
               🏆 Leaderboard
@@ -645,7 +655,7 @@ class UIManager {
             <button class="btn-card-extra btn-extra-ch" onclick="event.stopPropagation(); uiManager.openChallengesModal('incoming')" title="Challenges">
               🎯 Challenges
             </button>
-          </div>
+          </div>`}
         </div>
       `
       : `
@@ -655,7 +665,7 @@ class UIManager {
       `;
 
     return `
-      <article class="game-card ${selectedClass}" data-game-id="${game.id}" onclick="uiManager.selectGame('${game.id}')">
+      <article class="game-card ${selectedClass}" data-game-id="${game.id}" onclick="${cardClick}">
         <div class="game-card-art-wrap">
           <img src="${game.image}" alt="${game.title}" class="game-card-art" loading="lazy">
           <span class="game-card-badge ${badgeClass}">${game.badge}</span>

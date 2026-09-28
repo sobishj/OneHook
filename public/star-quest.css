@@ -1,0 +1,1446 @@
+/* Star Quest — page-scoped styles. Kept separate from styles.css to avoid
+   any risk of colliding with One Hook's class names; reuses shared brand
+   variables (--primary, --accent-yellow, etc.) defined in styles.css. */
+
+.sq-app {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.sq-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60vh;
+}
+
+.sq-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 5px solid var(--card-border);
+  border-top-color: var(--accent-yellow);
+  animation: sq-spin 0.8s linear infinite;
+}
+
+@keyframes sq-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sq-onboard {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.sq-onboard-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-shadow);
+  padding: 32px 28px;
+}
+
+.sq-onboard-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.sq-onboard-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.sq-onboard-section h2 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.sq-invite-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sq-invite-request-card {
+  border: 1px solid var(--accent-yellow, #f59e0b);
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.sq-invite-request-text {
+  font-size: 14px;
+  color: var(--text-main);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.sq-invite-request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sq-invite-request-name {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.sq-invite-request-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.sq-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sq-form input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-main);
+  min-height: 48px;
+}
+
+.sq-form input:focus {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 1px;
+}
+
+.sq-onboard-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 24px 0;
+  position: relative;
+}
+
+.sq-onboard-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  font-size: 14px;
+  text-align: center;
+}
+
+.sq-back-link {
+  display: block;
+  text-align: center;
+  margin-top: 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.sq-back-link:hover {
+  color: var(--primary);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---- Parent dashboard shell ---- */
+.sq-shell {
+  width: 100%;
+  max-width: 640px;
+}
+
+.sq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sq-header-title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.sq-back-link-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.sq-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sq-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 16px;
+}
+
+.sq-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.sq-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.sq-kid-chips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  padding-bottom: 4px;
+}
+
+.sq-kid-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--card-border);
+  background: #fff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 48px;
+}
+
+.sq-kid-chip.active {
+  border-color: var(--kid-color, var(--primary));
+  background: color-mix(in srgb, var(--kid-color, var(--primary)) 12%, white);
+}
+
+.sq-kid-chip-avatar {
+  font-size: 20px;
+}
+
+img.sq-kid-chip-avatar {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 999px;
+  flex: none;
+}
+
+.sq-tab-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: var(--glass-shadow);
+}
+
+.sq-empty-state {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.sq-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.sq-empty-hint {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.sq-today-summary {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.sq-today-stat-val {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.sq-today-stat-label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.sq-goal-progress-card {
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.sq-goal-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.sq-progress-bar {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.sq-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-yellow), var(--accent-yellow-hover));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.sq-goal-hint {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ---- Today tab: one mini card per goal period (week/month/year) ---- */
+.sq-goals-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sq-goal-mini-card {
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.sq-goal-mini-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+
+.sq-goal-mini-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.sq-goal-mini-label {
+  font-weight: 700;
+}
+
+.sq-progress-bar-sm {
+  height: 8px;
+}
+
+/* ---- Rewards tab: one section per goal period, each with its own
+   create form or progress card + edit form ---- */
+.sq-goal-section {
+  margin-bottom: 24px;
+}
+
+.sq-edit-goal-form {
+  margin-top: 10px;
+}
+
+.sq-goal-progress-card .sq-edit-goal-toggle-btn {
+  margin-top: 10px;
+}
+
+.sq-give-star-btn {
+  min-height: 56px;
+  font-size: 17px;
+  margin-bottom: 24px;
+}
+
+.sq-section-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 20px 0 10px;
+}
+
+.sq-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sq-period-tabs {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.sq-period-btn {
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.sq-period-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.sq-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sq-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.sq-history-reason {
+  flex: 1;
+}
+
+.sq-history-date {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sq-history-undo {
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 16px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+/* ---- Give-star modal ---- */
+.sq-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  justify-content: center;
+  /* A safety net on top of .sq-modal-body's own internal scroll: on some
+     mobile browsers/webviews `vh` is computed against the larger "layout"
+     viewport (ignoring the address bar), so a 90vh modal can end up taller
+     than what's actually visible — align-items:center would then clip it
+     top AND bottom with no way to reach the rest. overflow-y here plus
+     margin:auto on .sq-modal (instead of align-items:center) means the
+     backdrop itself can always be scrolled to reach every part of the
+     modal, however wrong `vh` turns out to be on a given device. */
+  overflow-y: auto;
+  z-index: 100;
+  padding: 16px;
+}
+
+.sq-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  /* dvh reflects the real, current visible viewport (address bar and all)
+     on browsers that support it; on ones that don't, this line is invalid
+     and ignored, leaving the 90vh above in effect. */
+  max-height: 90dvh;
+  margin: auto 0;
+  background: #fff;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sq-modal h2 {
+  font-family: var(--font-heading);
+  margin: 0;
+  padding: 22px 24px 12px;
+  flex: none;
+}
+
+/* Wraps a modal's <form> so it can host a scrollable body + a footer that
+   never scrolls out of view, same layout as .sq-modal-body below. */
+.sq-modal-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* The scrollable middle of a modal — everything except the title and the
+   action buttons, which must always stay on screen even when the content
+   (reason grid, kid photo picker, etc.) grows taller than the viewport. */
+.sq-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 24px 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sq-star-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sq-star-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px solid var(--card-border);
+  background: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.sq-star-btn.selected {
+  border-color: var(--accent-yellow);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.sq-reason-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sq-reason-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 2px solid var(--card-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 20px;
+  min-height: 48px;
+  text-align: left;
+}
+
+.sq-reason-btn small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sq-reason-btn.selected {
+  border-color: var(--primary);
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.sq-hint-inline {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sq-reason-tile {
+  position: relative;
+}
+
+.sq-reason-tile .sq-reason-btn {
+  width: 100%;
+}
+
+.sq-reason-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.sq-reason-tile.show-delete .sq-reason-delete {
+  display: flex;
+}
+
+.sq-reason-tile.show-delete .sq-reason-btn {
+  opacity: 0.6;
+}
+
+.sq-reason-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 2px dashed var(--card-border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  min-height: 48px;
+  color: var(--text-muted);
+}
+
+.sq-reason-add-btn small {
+  font-size: 12px;
+}
+
+.sq-add-reason-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg-main);
+  border: 1px solid var(--card-border);
+}
+
+.sq-add-reason-form input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  font-family: var(--font-body);
+  width: 100%;
+}
+
+.sq-reason-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* A <button>, not a static preview — tapping it is how a parent opens the
+   icon grid below, so it needs a clear "this is tappable" affordance
+   (dashed border) on top of just showing the currently-selected icon. */
+.sq-reason-icon-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px dashed var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex: none;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sq-reason-icon-preview:active {
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.sq-reason-icon-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Sized explicitly (not 100%) because these sit next to a text label
+   inside a flex button, unlike .sq-reason-icon-preview-img which is the
+   sole content of its own fixed-size box. */
+.sq-reason-icon-img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: none;
+  display: block;
+}
+
+.sqk-today-star-photo {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  margin: 0 auto;
+}
+
+.sq-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.sq-emoji-opt {
+  padding: 8px 0;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.sq-emoji-opt:hover {
+  border-color: var(--primary);
+}
+
+.sq-praise-input {
+  width: 100%;
+  min-height: 70px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  font-family: var(--font-body);
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+.sq-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex: none;
+  padding: 14px 24px;
+  border-top: 1px solid var(--card-border);
+  background: #fff;
+}
+
+/* ---- Family tab ---- */
+.sq-kid-manage-list, .sq-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sq-kid-manage-item, .sq-member-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.sq-kid-manage-item span:nth-child(2), .sq-member-item span {
+  flex: 1;
+}
+
+.sq-member-name-edit {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.sq-member-save-btn {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.sq-icon-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.sq-invite-result {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(2, 132, 199, 0.08);
+  border-radius: 10px;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.sq-inline-form {
+  flex-direction: row;
+}
+
+.sq-inline-form input {
+  flex: 1;
+}
+
+/* ---- Add-kid modal ---- */
+.sq-kid-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sq-kid-photo-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-main);
+  border: 1px solid var(--card-border);
+  flex: none;
+}
+
+.sq-kid-photo-thumb, .sq-kid-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sq-kid-avatar-photo {
+  border-radius: 999px;
+}
+
+.sq-photo-choose-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sq-avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sq-avatar-opt {
+  padding: 10px;
+  border-radius: 12px;
+  border: 2px solid var(--card-border);
+  background: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.sq-avatar-opt.selected {
+  border-color: var(--primary);
+  background: rgba(2, 132, 199, 0.1);
+}
+
+.sq-color-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.sq-color-opt {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.sq-color-opt.selected {
+  border-color: var(--text-main);
+}
+
+/* ---- Rewards / memory wall ---- */
+.sq-memory-wall {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.sq-memory-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px;
+  background: #fff;
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.sq-memory-emoji {
+  font-size: 28px;
+}
+
+@media (max-width: 480px) {
+  .sq-onboard-card { padding: 24px 18px; }
+  .sq-reason-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   KID MODE — playful, colorful, no-reading-required. Big tap targets
+   (min 64px), warm high-contrast colors, positive-only feedback.
+   ========================================================================== */
+
+.sqk-screen {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(160deg, #fde047 0%, #fb923c 28%, #f472b6 60%, #a78bfa 100%);
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+}
+
+.sqk-back-btn {
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #78350f;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.sqk-sparkle-decor {
+  font-size: 22px;
+  letter-spacing: 12px;
+  margin-top: 8px;
+  opacity: 0.9;
+  animation: sqk-twinkle 2.4s ease-in-out infinite;
+}
+
+.sqk-who-title {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(120, 53, 15, 0.3);
+  text-align: center;
+  margin: 12px 0 28px;
+}
+
+.sqk-avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+.sqk-avatar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  min-height: 130px;
+  border-radius: 28px;
+  border: 5px solid var(--kid-color, #f59e0b);
+  background: #fffdf5;
+  cursor: pointer;
+  box-shadow: 0 8px 0 color-mix(in srgb, var(--kid-color, #f59e0b) 60%, black), 0 12px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(0);
+  transition: transform 0.12s ease;
+}
+
+.sqk-avatar-btn:active {
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--kid-color, #f59e0b) 60%, black), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.sqk-avatar-emoji {
+  font-size: 52px;
+}
+
+.sqk-avatar-photo {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 999px;
+  border: 3px solid #fff;
+}
+
+.sqk-avatar-name {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 19px;
+  color: #78350f;
+}
+
+.sqk-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sqk-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sqk-sound-btn {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+}
+
+.sqk-sound-btn:active {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.sqk-switch-kid-btn {
+  min-height: 56px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 0 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.sqk-jar-wrap {
+  position: relative;
+  width: 180px;
+  height: 240px;
+  margin: 16px 0;
+  border: 7px solid #fff;
+  border-radius: 26px 26px 46px 46px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.5);
+}
+
+.sqk-jar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #fef08a, #fbbf24 45%, #f59e0b);
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: inset 0 4px 12px rgba(255, 255, 255, 0.6);
+}
+
+.sqk-jar-mascot {
+  position: relative;
+  z-index: 1;
+  font-size: 44px;
+  margin-bottom: 14px;
+  animation: sqk-bob 2s ease-in-out infinite;
+}
+
+.sqk-gift-hint {
+  min-width: 96px;
+  min-height: 96px;
+  border-radius: 26px;
+  border: 5px dashed #fff;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  margin-bottom: 20px;
+  animation: sqk-pulse-glow 1.8s ease-in-out infinite;
+}
+
+.sqk-gift-emoji {
+  font-size: 46px;
+}
+
+/* ---- Which of the kid's (up to three) goals the jar is showing ---- */
+.sqk-goal-period-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sqk-goal-period-btn {
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+
+.sqk-goal-period-btn.active {
+  background: #fff;
+  color: #78350f;
+  border-color: #fff;
+}
+
+.sqk-goal-period-btn.sqk-goal-period-empty {
+  opacity: 0.6;
+}
+
+.sqk-period-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 8px;
+}
+
+.sqk-period-btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
+.sqk-period-btn.active {
+  background: #fff;
+  color: #78350f;
+  opacity: 1;
+}
+
+.sqk-collected-stat {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(120, 53, 15, 0.3);
+  margin-bottom: 8px;
+}
+
+/* ---- Drop zone highlight while a pending star is being dragged over the jar ---- */
+.sqk-jar-wrap.sqk-jar-target {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.5), 0 0 0 6px rgba(255, 255, 255, 0.6);
+  transform: scale(1.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sqk-pending-section {
+  width: 100%;
+  max-width: 360px;
+  margin-top: 8px;
+}
+
+.sqk-pending-label {
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(120, 53, 15, 0.3);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.sqk-pending-stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.sqk-pending-star {
+  position: relative;
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 20px;
+  background: #fff;
+  cursor: grab;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sqk-pending-star.dragging {
+  cursor: grabbing;
+  z-index: 50;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.sqk-pending-star-badge, .sqk-pending-star-badge-photo {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.sqk-pending-star-badge-photo {
+  object-fit: cover;
+}
+
+.sqk-pending-star-icons {
+  font-size: 16px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ---- Celebration particles spawned on a successful drop (see .js) ---- */
+.sqk-celebrate-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 500;
+  animation: sqk-particle-burst 0.9s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes sqk-particle-burst {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); opacity: 0; }
+}
+
+/* ---- Page-wide confetti, falling from the top of the viewport (see .js) ---- */
+.sqk-confetti-particle {
+  position: fixed;
+  top: -40px;
+  pointer-events: none;
+  z-index: 500;
+  animation: sqk-confetti-fall var(--fall-duration, 2s) ease-in var(--fall-delay, 0s) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes sqk-confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(var(--fall-rotate, 360deg)); opacity: 0; }
+}
+
+.sqk-empty-hint {
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(120, 53, 15, 0.3);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---- Scratch card ---- */
+.sqk-scratch-screen {
+  justify-content: center;
+}
+
+.sqk-scratch-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 4 / 3;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.sqk-scratch-reveal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  text-align: center;
+  padding: 20px;
+}
+
+.sqk-reveal-emoji {
+  font-size: 64px;
+}
+
+.sqk-reveal-text {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 22px;
+  color: #78350f;
+}
+
+.sqk-scratch-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.sqk-scratch-hint {
+  margin-top: 20px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: #78350f;
+}
+
+/* ---- Exit-to-parent button (jar screen only) ---- */
+.sqk-exit-btn {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 20px;
+}
+
+.sqk-exit-btn:active {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* ---- Playful motion (all disabled under prefers-reduced-motion) ---- */
+.sqk-bounce-in {
+  animation: sqk-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes sqk-bounce-in {
+  0% { transform: scale(0.3) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes sqk-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes sqk-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+}
+
+@keyframes sqk-twinkle {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sqk-jar-fill { transition: none; }
+  .sqk-jar-mascot, .sqk-gift-hint, .sqk-sparkle-decor, .sqk-bounce-in {
+    animation: none !important;
+  }
+  .sqk-jar-wrap.sqk-jar-target {
+    transform: none;
+    transition: none;
+  }
+}
