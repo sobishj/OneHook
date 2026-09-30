@@ -254,12 +254,6 @@ class StarQuestKid {
           <div class="sqk-jar-mascot">⭐</div>
         </div>
 
-        ${this.goal ? `
-          <button class="sqk-gift-hint" id="sqk-gift-hint-btn">
-            <span class="sqk-gift-emoji">${this.goal.reward_hint_emoji || '🎁'}</span>
-          </button>
-        ` : ''}
-
         <div id="sqk-pending-section" class="sqk-pending-section">
           ${pendingUnits.length === 0 ? '' : `
             <p class="sqk-pending-label">✨ Drag your stars into the jar!</p>
@@ -296,11 +290,6 @@ class StarQuestKid {
     // switching the Day/Week/Month/Year/All tab changes what tapping the
     // jar says too, instead of always reporting the goal's own progress.
     jarTap.addEventListener('click', () => window.SqSounds.speak(`${periodTotal} stars ${periodSpokenPhrase[period]}!`));
-
-    const hintBtn = document.getElementById('sqk-gift-hint-btn');
-    if (hintBtn) hintBtn.addEventListener('click', () => {
-      if (this.goal.reward_hint) window.SqSounds.speak(this.goal.reward_hint);
-    });
 
     this.hydrateAvatarPhotos();
     this.bindPendingDrag();

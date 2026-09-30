@@ -1211,6 +1211,12 @@ img.sq-kid-chip-avatar {
   position: relative;
   width: 180px;
   height: 240px;
+  /* .sqk-screen is a fixed-height (top:0/bottom:0) flex column — without
+     this, the default flex-shrink:1 squashes the jar down to a sliver
+     whenever the rest of the screen's content (topbar + tabs + stat +
+     pending stars) doesn't all fit in the viewport, instead of just
+     letting the screen scroll (it already has overflow-y: auto). */
+  flex-shrink: 0;
   margin: 16px 0;
   border: 7px solid #fff;
   border-radius: 26px 26px 46px 46px;
@@ -1239,21 +1245,6 @@ img.sq-kid-chip-avatar {
   font-size: 44px;
   margin-bottom: 14px;
   animation: sqk-bob 2s ease-in-out infinite;
-}
-
-.sqk-gift-hint {
-  min-width: 96px;
-  min-height: 96px;
-  border-radius: 26px;
-  border: 5px dashed #fff;
-  background: rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  margin-bottom: 20px;
-  animation: sqk-pulse-glow 1.8s ease-in-out infinite;
-}
-
-.sqk-gift-emoji {
-  font-size: 46px;
 }
 
 /* ---- Which of the kid's (up to three) goals the jar is showing ---- */
@@ -1546,11 +1537,6 @@ img.sq-kid-chip-avatar {
   50% { transform: translateY(-6px); }
 }
 
-@keyframes sqk-pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
-  50% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
-}
-
 @keyframes sqk-twinkle {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.1); }
@@ -1558,7 +1544,7 @@ img.sq-kid-chip-avatar {
 
 @media (prefers-reduced-motion: reduce) {
   .sqk-jar-fill { transition: none; }
-  .sqk-jar-mascot, .sqk-gift-hint, .sqk-sparkle-decor, .sqk-bounce-in {
+  .sqk-jar-mascot, .sqk-sparkle-decor, .sqk-bounce-in {
     animation: none !important;
   }
   .sqk-jar-wrap.sqk-jar-target {
