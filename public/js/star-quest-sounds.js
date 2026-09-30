@@ -47,6 +47,43 @@ function sqPlayTone(freq, duration, delay = 0, gainPeak = 0.15) {
   osc.stop(startAt + duration + 0.05);
 }
 
+// ---- Voice selection: speak() picks a random installed voice each time,
+// biased towards alternating between "male" and "female" sounding ones (the
+// Web Speech API has no gender field, so this is a name-based heuristic —
+// most engines label their voices "X Male"/"X Female" or use a recognizable
+// human name). Voices load asynchronously in some browsers, so this caches
+// getVoices() and refreshes on the voiceschanged event rather than reading
+// it once at script-load time, when it's often still empty.
+let sqVoiceCache = [];
+function sqRefreshVoices() {
+  if ('speechSynthesis' in window) sqVoiceCache = window.speechSynthesis.getVoices() || [];
+}
+if ('speechSynthesis' in window) {
+  sqRefreshVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', sqRefreshVoices);
+}
+
+const SQ_FEMALE_VOICE_HINTS = ['female', 'zira', 'samantha', 'victoria', 'karen', 'moira', 'tessa', 'susan', 'fiona', 'allison', 'ava', 'serena', 'kate', 'hazel', 'catherine', 'linda', 'heera', 'salli', 'joanna'];
+const SQ_MALE_VOICE_HINTS = ['male', 'david', 'mark', 'daniel', 'alex', 'fred', 'oliver', 'george', 'james', 'arthur', 'ryan', 'guy', 'tom', 'rishi', 'justin', 'eric'];
+
+function sqPickRandomVoice() {
+  const voices = sqVoiceCache.length ? sqVoiceCache : (('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : []);
+  if (!voices.length) return null;
+
+  const englishVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
+  const pool = englishVoices.length ? englishVoices : voices;
+  const matches = (v, hints) => hints.some((h) => v.name.toLowerCase().includes(h));
+  const femaleVoices = pool.filter((v) => matches(v, SQ_FEMALE_VOICE_HINTS));
+  const maleVoices = pool.filter((v) => matches(v, SQ_MALE_VOICE_HINTS) && !matches(v, SQ_FEMALE_VOICE_HINTS));
+
+  let group = pool;
+  if (femaleVoices.length && maleVoices.length) group = Math.random() < 0.5 ? femaleVoices : maleVoices;
+  else if (femaleVoices.length) group = femaleVoices;
+  else if (maleVoices.length) group = maleVoices;
+
+  return group[Math.floor(Math.random() * group.length)];
+}
+
 // A pool of distinct little jingles for "a star landed in the jar" — picked
 // at random each drop so repeated drops don't all sound identical.
 const SQ_DROP_CHIMES = [
@@ -99,6 +136,8 @@ const SqSounds = {
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 0.95;
     utter.pitch = 1.1;
+    const voice = sqPickRandomVoice();
+    if (voice) utter.voice = voice;
     window.speechSynthesis.speak(utter);
   }
 };

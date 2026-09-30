@@ -994,8 +994,15 @@ img.sq-kid-chip-avatar {
   flex-direction: column;
   align-items: center;
   background: linear-gradient(160deg, #fde047 0%, #fb923c 28%, #f472b6 60%, #a78bfa 100%);
+  /* Centered like .sq-shell on the parent side — `left: 50%` + a
+     translateX offset, not `inset: 0`, because `inset: 0` forces both
+     left AND right to 0, which fights `max-width` and pins the box to
+     the left edge instead of centering it on wide (desktop) viewports. */
   position: fixed;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   overflow-y: auto;
 }
 
@@ -1111,6 +1118,80 @@ img.sq-kid-chip-avatar {
 
 .sqk-sound-btn:active {
   background: rgba(255, 255, 255, 0.75);
+}
+
+.sqk-view-tabs {
+  display: flex;
+  width: 100%;
+  max-width: 380px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 5px;
+  margin-bottom: 14px;
+}
+
+.sqk-view-tab {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.sqk-view-tab.active {
+  background: #fff;
+  color: #78350f;
+  opacity: 1;
+}
+
+.sqk-achievements-list {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sqk-achievement-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.sqk-achievement-emoji {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sqk-achievement-info {
+  min-width: 0;
+}
+
+.sqk-achievement-text {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  color: #78350f;
+  margin-bottom: 2px;
+}
+
+.sqk-achievement-meta {
+  font-size: 13px;
+  color: #92400e;
+  opacity: 0.85;
 }
 
 .sqk-switch-kid-btn {

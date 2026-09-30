@@ -370,7 +370,7 @@ class StarQuestParent {
         </div>
         <form id="sq-invite-form" class="sq-form sq-inline-form">
           <input type="email" id="sq-invite-email" placeholder="Partner's email (optional)" maxlength="100">
-          <button type="submit" class="btn btn-secondary btn-sm">📤 Invite Partner</button>
+          <button type="submit" class="btn btn-secondary btn-sm" id="sq-invite-submit">📤 Invite Partner</button>
         </form>
         <div id="sq-invite-result" class="sq-invite-result hidden"></div>
       </div>
@@ -610,14 +610,17 @@ class StarQuestParent {
 
     this.mountEl.querySelectorAll('[data-save-member]').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
         const row = btn.closest('.sq-member-item');
         const newName = row.querySelector('.sq-member-name-edit').value.trim();
         if (!newName) return;
+        btn.disabled = true;
         try {
           await window.sqApi.updateMyDisplayName(newName);
           await this.refresh();
         } catch (err) {
           alert(err.message || 'Could not update your name.');
+          btn.disabled = false;
         }
       });
     });
@@ -625,6 +628,9 @@ class StarQuestParent {
     const inviteForm = document.getElementById('sq-invite-form');
     if (inviteForm) inviteForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = document.getElementById('sq-invite-submit');
+      if (submitBtn.disabled) return;
+      submitBtn.disabled = true;
       const resultEl = document.getElementById('sq-invite-result');
       const email = document.getElementById('sq-invite-email').value.trim();
       try {
@@ -640,12 +646,17 @@ class StarQuestParent {
       } catch (err) {
         resultEl.textContent = err.message || 'Could not create invite.';
         resultEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
       }
     });
 
     this.mountEl.querySelectorAll('.sq-goal-form').forEach((form) => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && submitBtn.disabled) return;
+        if (submitBtn) submitBtn.disabled = true;
         const kid = this.kids.find((k) => k.id === this.selectedKidId);
         try {
           await window.sqApi.createGoal({
@@ -660,6 +671,7 @@ class StarQuestParent {
           await this.render();
         } catch (err) {
           alert(err.message || 'Could not create goal.');
+          if (submitBtn) submitBtn.disabled = false;
         }
       });
     });
@@ -674,6 +686,9 @@ class StarQuestParent {
     this.mountEl.querySelectorAll('.sq-edit-goal-form').forEach((form) => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && submitBtn.disabled) return;
+        if (submitBtn) submitBtn.disabled = true;
         const updates = {
           targetStars: parseInt(form.querySelector('.sq-edit-goal-target').value, 10),
           rewardHint: form.querySelector('.sq-edit-goal-hint').value.trim() || null,
@@ -692,6 +707,7 @@ class StarQuestParent {
           await this.render();
         } catch (err) {
           alert(err.message || 'Could not update goal.');
+          if (submitBtn) submitBtn.disabled = false;
         }
       });
     });
@@ -825,9 +841,11 @@ class StarQuestParent {
 
     const saveReasonBtn = document.getElementById('sq-new-reason-save');
     if (saveReasonBtn) saveReasonBtn.addEventListener('click', async () => {
+      if (saveReasonBtn.disabled) return;
       const icon = this.pendingNewReasonIcon || '⭐';
       const label = document.getElementById('sq-new-reason-label').value.trim();
       if (!label) return;
+      saveReasonBtn.disabled = true;
       const statusEl = document.getElementById('sq-reason-icon-status');
       try {
         const { reason } = await window.sqApi.createReason(icon, label);
@@ -854,11 +872,17 @@ class StarQuestParent {
         this.openGiveStarModal();
       } catch (err) {
         alert(err.message || 'Could not add this reason.');
+        saveReasonBtn.disabled = false;
       }
     });
 
     document.getElementById('sq-give-star-cancel').addEventListener('click', () => modal.classList.add('hidden'));
-    document.getElementById('sq-give-star-submit').addEventListener('click', async () => {
+    const giveStarSubmitBtn = document.getElementById('sq-give-star-submit');
+    giveStarSubmitBtn.addEventListener('click', async () => {
+      // Same guard as the kid form — a double-tap here would otherwise
+      // give the same star twice.
+      if (giveStarSubmitBtn.disabled) return;
+      giveStarSubmitBtn.disabled = true;
       const kid = this.kids.find((k) => k.id === this.selectedKidId);
       const praiseText = document.getElementById('sq-praise-text').value.trim();
       try {
@@ -867,6 +891,7 @@ class StarQuestParent {
         await this.render();
       } catch (err) {
         alert(err.message || 'Could not give star.');
+        giveStarSubmitBtn.disabled = false;
       }
     });
   }
@@ -944,6 +969,16 @@ class StarQuestParent {
     const form = document.getElementById('sq-add-kid-form');
     if (form) form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      // Guards against a duplicate kid row from a double-tap or a second
+      // click while the first save is still in flight (no other signal
+      // blocks a second 'submit' from firing mid-request).
+      if (this.savingKid) return;
+      this.savingKid = true;
+
+      const submitBtn = document.getElementById('sq-add-kid-submit');
+      const originalLabel = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
+
       const kidData = {
         name: document.getElementById('sq-kid-name').value.trim(),
         avatar: document.getElementById('sq-kid-avatar').value,
@@ -980,6 +1015,9 @@ class StarQuestParent {
         await this.refresh();
       } catch (err) {
         alert(err.message || 'Could not save this kid.');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalLabel; }
+      } finally {
+        this.savingKid = false;
       }
     });
   }

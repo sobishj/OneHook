@@ -207,6 +207,11 @@ class StarQuestKid {
     const collectedEntries = this.history.filter((h) => h.collected_at);
     const period = this.jarPeriod || 'week';
     const periodLabels = { day: 'Today', week: 'Week', month: 'Month', year: 'Year', all: 'All' };
+    // Phrasing for the jar-tap voice line — always "in the jar", matching
+    // the visible "⭐ N in the jar" stat above, plus whichever period is
+    // selected (kept separate from periodLabels/tab text since "in the
+    // jar this Year" reads naturally as speech but "Year" alone doesn't).
+    const periodSpokenPhrase = { day: 'in the jar today', week: 'in the jar this week', month: 'in the jar this month', year: 'in the jar this year', all: 'in the jar' };
     const periodTotal = this.filterByPeriod(collectedEntries, period).reduce((s, h) => s + h.stars, 0);
 
     // Flatten each entry into one draggable unit per star — a kid drags
@@ -232,6 +237,8 @@ class StarQuestKid {
             <button class="sqk-exit-btn" id="sqk-exit-btn" title="Back to parent">🏠</button>
           </div>
         </div>
+
+        ${this.viewTabsHtml('jar')}
 
         <div class="sqk-goal-period-tabs">
           ${SQK_GOAL_PERIODS.map((p) => `<button class="sqk-goal-period-btn ${p === this.goalPeriod ? 'active' : ''} ${this.goals[p] ? '' : 'sqk-goal-period-empty'}" data-goal-period="${p}">${SQK_GOAL_PERIOD_LABELS[p]}</button>`).join('')}
@@ -274,6 +281,7 @@ class StarQuestKid {
     document.getElementById('sqk-switch-kid').addEventListener('click', () => this.renderWho());
     document.getElementById('sqk-exit-btn').addEventListener('click', () => { if (this.onExit) this.onExit(); });
     this.bindSoundToggle();
+    this.bindViewTabs();
 
     this.mountEl.querySelectorAll('.sqk-goal-period-btn').forEach((btn) => {
       btn.addEventListener('click', () => { window.SqSounds.chime(); this.switchGoalPeriod(btn.dataset.goalPeriod); });
@@ -284,7 +292,10 @@ class StarQuestKid {
     });
 
     const jarTap = document.getElementById('sqk-jar-tap');
-    jarTap.addEventListener('click', () => window.SqSounds.speak(`${progress} stars so far!`));
+    // Speaks the same number the "in the jar" stat above is showing, so
+    // switching the Day/Week/Month/Year/All tab changes what tapping the
+    // jar says too, instead of always reporting the goal's own progress.
+    jarTap.addEventListener('click', () => window.SqSounds.speak(`${periodTotal} stars ${periodSpokenPhrase[period]}!`));
 
     const hintBtn = document.getElementById('sqk-gift-hint-btn');
     if (hintBtn) hintBtn.addEventListener('click', () => {
@@ -474,6 +485,114 @@ class StarQuestKid {
       document.body.appendChild(particle);
       setTimeout(() => particle.remove(), 2200);
     }
+  }
+
+  // Every reward a kid has scratched open, grouped by Today/Week/Month/
+  // Year/All — based on when it was revealed (scratched), not when the
+  // goal itself was created or which goal period (week/month/year) it was
+  // for. That's shown per-card instead, since a Yearly goal revealed today
+  // still belongs in "Today".
+  async renderAchievements() {
+    let goals = [];
+    try {
+      const res = await window.sqApi.goalHistory(this.kid.id);
+      goals = res.goals || [];
+    } catch (err) { /* leaves the empty state below */ }
+    this.achievementGoals = goals;
+    if (!this.achievementPeriod) this.achievementPeriod = 'week';
+    this.renderAchievementsList();
+  }
+
+  filterGoalsByPeriod(goals, period) {
+    if (period === 'all') return goals;
+    const dateOf = (g) => new Date(g.revealed_at || g.redeemed_at || g.created_at);
+    const now = new Date();
+    if (period === 'day') {
+      const today = now.toISOString().slice(0, 10);
+      return goals.filter((g) => dateOf(g).toISOString().slice(0, 10) === today);
+    }
+    const cutoff = new Date(now);
+    if (period === 'week') cutoff.setDate(now.getDate() - 7);
+    else if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
+    else if (period === 'year') cutoff.setFullYear(now.getFullYear() - 1);
+    return goals.filter((g) => dateOf(g).getTime() >= cutoff.getTime());
+  }
+
+  formatAchievementDate(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  // Shared by renderJar() and renderAchievementsList() — a real tab bar,
+  // not a separate screen reached via an icon button, so switching between
+  // the jar and past rewards feels like one place, not a detour.
+  viewTabsHtml(activeView) {
+    return `
+      <div class="sqk-view-tabs">
+        <button class="sqk-view-tab ${activeView === 'jar' ? 'active' : ''}" data-view="jar">🫙 Jar</button>
+        <button class="sqk-view-tab ${activeView === 'achievements' ? 'active' : ''}" data-view="achievements">🏆 Achievements</button>
+      </div>
+    `;
+  }
+
+  bindViewTabs() {
+    this.mountEl.querySelectorAll('.sqk-view-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.view === 'achievements') this.renderAchievements();
+        else this.renderJar();
+      });
+    });
+  }
+
+  renderAchievementsList() {
+    const period = this.achievementPeriod;
+    const periodLabels = { day: 'Today', week: 'Week', month: 'Month', year: 'Year', all: 'All' };
+    const periodEmptyPhrase = { day: 'today', week: 'this week', month: 'this month', year: 'this year', all: 'yet' };
+    const goalPeriodLabel = { week: 'Weekly', month: 'Monthly', year: 'Yearly' };
+
+    const filtered = this.filterGoalsByPeriod(this.achievementGoals || [], period)
+      .slice()
+      .sort((a, b) => new Date(b.revealed_at || b.redeemed_at) - new Date(a.revealed_at || a.redeemed_at));
+
+    this.mountEl.innerHTML = `
+      <div class="sqk-screen sqk-jar-screen">
+        <div class="sqk-topbar">
+          <button class="sqk-switch-kid-btn" id="sqk-switch-kid">🔄 ${this.esc(this.kid.name)}</button>
+          <div class="sqk-topbar-right">
+            ${this.soundToggleHtml()}
+            <button class="sqk-exit-btn" id="sqk-exit-btn" title="Back to parent">🏠</button>
+          </div>
+        </div>
+
+        ${this.viewTabsHtml('achievements')}
+
+        <div class="sqk-period-tabs">
+          ${Object.keys(periodLabels).map((p) => `<button class="sqk-period-btn ${p === period ? 'active' : ''}" data-achievement-period="${p}">${periodLabels[p]}</button>`).join('')}
+        </div>
+
+        <div class="sqk-achievements-list">
+          ${filtered.length === 0
+            ? `<p class="sqk-empty-hint">No rewards unlocked ${periodEmptyPhrase[period]}.</p>`
+            : filtered.map((g) => `
+              <div class="sqk-achievement-card">
+                <span class="sqk-achievement-emoji">${g.reward_secret_emoji || '🎁'}</span>
+                <div class="sqk-achievement-info">
+                  <p class="sqk-achievement-text">${this.esc(g.reward_secret || '')}</p>
+                  <p class="sqk-achievement-meta">${goalPeriodLabel[g.period] || ''} goal · ${this.formatAchievementDate(g.revealed_at || g.redeemed_at)}</p>
+                </div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('sqk-switch-kid').addEventListener('click', () => this.renderWho());
+    document.getElementById('sqk-exit-btn').addEventListener('click', () => { if (this.onExit) this.onExit(); });
+    this.bindSoundToggle();
+    this.bindViewTabs();
+    this.mountEl.querySelectorAll('[data-achievement-period]').forEach((btn) => {
+      btn.addEventListener('click', () => { this.achievementPeriod = btn.dataset.achievementPeriod; this.renderAchievementsList(); });
+    });
   }
 
   renderScratch() {
