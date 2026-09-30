@@ -11,7 +11,6 @@ const SQ_AVATAR_EMOJI_K = {
 // with its own jar/progress/reward (see star-quest-parent.js for the
 // matching parent-side create/edit UI).
 const SQK_GOAL_PERIODS = ['week', 'month', 'year'];
-const SQK_GOAL_PERIOD_LABELS = { week: 'Week', month: 'Month', year: 'Year' };
 
 // One of these is picked at random each time a star lands in the jar, so
 // repeated drops don't all look the same. 'fall' particles drift down from
@@ -161,16 +160,6 @@ class StarQuestKid {
     this.renderJar();
   }
 
-  switchGoalPeriod(period) {
-    this.goalPeriod = period;
-    this.goal = this.goals[period];
-    if (this.goal && this.goal.status === 'UNLOCKED') {
-      this.renderScratch();
-      return;
-    }
-    this.renderJar();
-  }
-
   progressStars() {
     // With no goal set yet there's nothing server-computed to show; fall
     // back to a simple lifetime total just for this generic jar display.
@@ -240,10 +229,6 @@ class StarQuestKid {
 
         ${this.viewTabsHtml('jar')}
 
-        <div class="sqk-goal-period-tabs">
-          ${SQK_GOAL_PERIODS.map((p) => `<button class="sqk-goal-period-btn ${p === this.goalPeriod ? 'active' : ''} ${this.goals[p] ? '' : 'sqk-goal-period-empty'}" data-goal-period="${p}">${SQK_GOAL_PERIOD_LABELS[p]}</button>`).join('')}
-        </div>
-
         <div class="sqk-period-tabs">
           ${Object.keys(periodLabels).map((p) => `<button class="sqk-period-btn ${p === period ? 'active' : ''}" data-period="${p}">${periodLabels[p]}</button>`).join('')}
         </div>
@@ -277,19 +262,20 @@ class StarQuestKid {
     this.bindSoundToggle();
     this.bindViewTabs();
 
-    this.mountEl.querySelectorAll('.sqk-goal-period-btn').forEach((btn) => {
-      btn.addEventListener('click', () => { window.SqSounds.chime(); this.switchGoalPeriod(btn.dataset.goalPeriod); });
-    });
-
     this.mountEl.querySelectorAll('.sqk-period-btn').forEach((btn) => {
       btn.addEventListener('click', () => { this.jarPeriod = btn.dataset.period; this.renderJar(); });
     });
 
     const jarTap = document.getElementById('sqk-jar-tap');
-    // Speaks the same number the "in the jar" stat above is showing, so
-    // switching the Day/Week/Month/Year/All tab changes what tapping the
-    // jar says too, instead of always reporting the goal's own progress.
-    jarTap.addEventListener('click', () => window.SqSounds.speak(`${periodTotal} stars ${periodSpokenPhrase[period]}!`));
+    // Speaks the same number the "in the jar" stat above is showing. Reads
+    // it live from the DOM rather than the `periodTotal` this render was
+    // built with — dragging a star into the jar bumps #sqk-collected-count
+    // in place (bumpCollectedStat) without a full re-render, so the
+    // closure's periodTotal would otherwise go stale by one star.
+    jarTap.addEventListener('click', () => {
+      const current = document.getElementById('sqk-collected-count').textContent;
+      window.SqSounds.speak(`${current} stars ${periodSpokenPhrase[period]}!`);
+    });
 
     this.hydrateAvatarPhotos();
     this.bindPendingDrag();

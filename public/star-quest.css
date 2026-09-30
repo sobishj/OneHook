@@ -1247,35 +1247,6 @@ img.sq-kid-chip-avatar {
   animation: sqk-bob 2s ease-in-out infinite;
 }
 
-/* ---- Which of the kid's (up to three) goals the jar is showing ---- */
-.sqk-goal-period-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.sqk-goal-period-btn {
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  padding: 6px 16px;
-  font-family: var(--font-heading);
-  font-size: 13px;
-  font-weight: 800;
-  color: #fff;
-  cursor: pointer;
-}
-
-.sqk-goal-period-btn.active {
-  background: #fff;
-  color: #78350f;
-  border-color: #fff;
-}
-
-.sqk-goal-period-btn.sqk-goal-period-empty {
-  opacity: 0.6;
-}
-
 .sqk-period-tabs {
   display: flex;
   gap: 4px;
