@@ -47,6 +47,17 @@ function sqPlayTone(freq, duration, delay = 0, gainPeak = 0.15) {
   osc.stop(startAt + duration + 0.05);
 }
 
+// A pool of distinct little jingles for "a star landed in the jar" — picked
+// at random each drop so repeated drops don't all sound identical.
+const SQ_DROP_CHIMES = [
+  () => { sqPlayTone(880, 0.22, 0); sqPlayTone(1318.5, 0.28, 0.09); },
+  () => { sqPlayTone(659.25, 0.15, 0); sqPlayTone(830.61, 0.15, 0.08); sqPlayTone(987.77, 0.22, 0.16); },
+  () => { sqPlayTone(1046.5, 0.18, 0); sqPlayTone(1318.5, 0.18, 0.07); sqPlayTone(1568, 0.24, 0.14); },
+  () => { sqPlayTone(420, 0.1, 0, 0.14); sqPlayTone(840, 0.2, 0.07); },
+  () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => sqPlayTone(f, 0.16, i * 0.06)); },
+  () => { sqPlayTone(1200, 0.08, 0, 0.12); sqPlayTone(1500, 0.08, 0.05, 0.12); sqPlayTone(1800, 0.16, 0.1); }
+];
+
 const SqSounds = {
   reducedMotion: SQ_REDUCED_MOTION,
 
@@ -63,6 +74,13 @@ const SqSounds = {
     if (!sqSoundEnabled()) return;
     sqPlayTone(880, 0.25, 0);
     sqPlayTone(1318.5, 0.3, 0.1);
+  },
+
+  // A different little jingle each time — see SQ_DROP_CHIMES.
+  dropChime() {
+    if (!sqSoundEnabled()) return;
+    const jingle = SQ_DROP_CHIMES[Math.floor(Math.random() * SQ_DROP_CHIMES.length)];
+    jingle();
   },
 
   celebrate() {

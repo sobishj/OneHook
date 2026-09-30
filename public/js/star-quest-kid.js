@@ -13,6 +13,20 @@ const SQ_AVATAR_EMOJI_K = {
 const SQK_GOAL_PERIODS = ['week', 'month', 'year'];
 const SQK_GOAL_PERIOD_LABELS = { week: 'Week', month: 'Month', year: 'Year' };
 
+// One of these is picked at random each time a star lands in the jar, so
+// repeated drops don't all look the same. 'fall' particles drift down from
+// the top of the screen (stars, hearts, flowers, confetti); 'firework'
+// particles launch up from the bottom instead, like a real firework.
+const SQK_CELEBRATION_THEMES = [
+  { emojis: ['⭐', '🌟', '✨'], mode: 'fall' },
+  { emojis: ['💖', '💕', '💗', '❤️'], mode: 'fall' },
+  { emojis: ['🌸', '🌺', '🌹', '🌷'], mode: 'fall' },
+  { emojis: ['🎉', '🎊', '✨'], mode: 'fall' },
+  { emojis: ['💫', '⭐', '✨'], mode: 'fall' },
+  { emojis: ['🎆', '🎇', '✨'], mode: 'firework' },
+  { emojis: ['🧨', '✨', '🎆'], mode: 'firework' }
+];
+
 class StarQuestKid {
   constructor(mountEl) {
     this.mountEl = mountEl;
@@ -357,9 +371,11 @@ class StarQuestKid {
     chip.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in';
     chip.style.transform = `translate(${dx}px, ${dy}px) scale(0.2)`;
     chip.style.opacity = '0';
-    window.SqSounds.chime();
-    this.spawnCelebration(targetX, targetY);
-    this.spawnPageConfetti();
+    window.SqSounds.dropChime();
+    const theme = SQK_CELEBRATION_THEMES[Math.floor(Math.random() * SQK_CELEBRATION_THEMES.length)];
+    this.spawnCelebration(targetX, targetY, theme.emojis);
+    if (theme.mode === 'firework') this.spawnFireworks(theme.emojis);
+    else this.spawnPageConfetti(theme.emojis);
 
     setTimeout(() => {
       chip.remove();
@@ -396,22 +412,16 @@ class StarQuestKid {
     el.textContent = String((parseInt(el.textContent, 10) || 0) + delta);
   }
 
-  // A small random burst of emoji particles at (x, y) — one of a few
-  // variants chosen at random each time, so repeated drops don't feel
-  // identical. Skipped under prefers-reduced-motion.
-  spawnCelebration(x, y) {
+  // A small burst of emoji particles at (x, y), in the drop's theme —
+  // reads as the immediate "impact" at the jar. Skipped under
+  // prefers-reduced-motion.
+  spawnCelebration(x, y, emojis) {
     if (window.SqSounds.reducedMotion) return;
-    const sets = [
-      ['✨', '⭐', '🌟'],
-      ['🎉', '🎊', '✨'],
-      ['💫', '⭐', '✨']
-    ];
-    const set = sets[Math.floor(Math.random() * sets.length)];
     const count = 10 + Math.floor(Math.random() * 6);
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('div');
       particle.className = 'sqk-celebrate-particle';
-      particle.textContent = set[Math.floor(Math.random() * set.length)];
+      particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
       const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
       const dist = 50 + Math.random() * 60;
       particle.style.left = `${x}px`;
@@ -424,23 +434,17 @@ class StarQuestKid {
     }
   }
 
-  // Confetti falling across the whole viewport — unlike spawnCelebration
-  // (a small burst anchored at the jar), this reads as the entire page
-  // celebrating, not just the drop point. Skipped under
+  // Confetti drifting down from the top of the viewport — unlike
+  // spawnCelebration (a small burst anchored at the jar), this reads as the
+  // entire page celebrating, not just the drop point. Skipped under
   // prefers-reduced-motion.
-  spawnPageConfetti() {
+  spawnPageConfetti(emojis) {
     if (window.SqSounds.reducedMotion) return;
-    const sets = [
-      ['✨', '⭐', '🌟'],
-      ['🎉', '🎊', '✨'],
-      ['💫', '⭐', '✨']
-    ];
-    const set = sets[Math.floor(Math.random() * sets.length)];
     const count = 22;
     for (let i = 0; i < count; i++) {
       const particle = document.createElement('div');
       particle.className = 'sqk-confetti-particle';
-      particle.textContent = set[Math.floor(Math.random() * set.length)];
+      particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
       particle.style.left = `${Math.random() * 100}vw`;
       particle.style.setProperty('--fall-delay', `${(Math.random() * 0.5).toFixed(2)}s`);
       particle.style.setProperty('--fall-duration', `${(1.6 + Math.random()).toFixed(2)}s`);
@@ -448,6 +452,27 @@ class StarQuestKid {
       particle.style.fontSize = `${16 + Math.random() * 16}px`;
       document.body.appendChild(particle);
       setTimeout(() => particle.remove(), 3200);
+    }
+  }
+
+  // Fireworks launching up from the bottom of the viewport — the "upward"
+  // counterpart to spawnPageConfetti's downward drift. Skipped under
+  // prefers-reduced-motion.
+  spawnFireworks(emojis) {
+    if (window.SqSounds.reducedMotion) return;
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'sqk-firework-particle';
+      particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      particle.style.left = `${10 + Math.random() * 80}vw`;
+      particle.style.setProperty('--rise-height', `-${55 + Math.random() * 30}vh`);
+      particle.style.setProperty('--rise-duration', `${(1.1 + Math.random() * 0.5).toFixed(2)}s`);
+      particle.style.setProperty('--rise-delay', `${(Math.random() * 0.4).toFixed(2)}s`);
+      particle.style.setProperty('--rise-rotate', `${Math.round(Math.random() * 60 - 30)}deg`);
+      particle.style.fontSize = `${16 + Math.random() * 16}px`;
+      document.body.appendChild(particle);
+      setTimeout(() => particle.remove(), 2200);
     }
   }
 
@@ -544,7 +569,9 @@ class StarQuestKid {
     if (!window.SqSounds.reducedMotion) canvas.style.transition = 'opacity 0.4s ease';
     canvas.style.opacity = '0';
     window.SqSounds.celebrate();
-    this.spawnPageConfetti();
+    const theme = SQK_CELEBRATION_THEMES[Math.floor(Math.random() * SQK_CELEBRATION_THEMES.length)];
+    if (theme.mode === 'firework') this.spawnFireworks(theme.emojis);
+    else this.spawnPageConfetti(theme.emojis);
     try {
       const { goal } = await window.sqApi.revealGoal(this.goal.id);
       this.goal = goal;

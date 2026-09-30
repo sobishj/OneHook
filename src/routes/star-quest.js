@@ -297,9 +297,6 @@ export async function handleStarQuest(request, env, pathname, method) {
   }
 
   if (sqPath === '/family/invite/accept' && method === 'POST') {
-    const existing = await getMyFamilyMembership(env, authUser.id);
-    if (existing) return jsonResponse({ error: 'You already belong to a family.' }, 400);
-
     const body = await request.json().catch(() => ({}));
     const code = (body.code || '').trim().toUpperCase();
     if (!code) return jsonResponse({ error: 'Invite code required.' }, 400);
@@ -308,13 +305,28 @@ export async function handleStarQuest(request, env, pathname, method) {
       .bind(code, Date.now()).first();
     if (!invite) return jsonResponse({ error: 'Invalid or expired invite code.' }, 404);
 
+    // A user belongs to at most one family at a time. Accepting an invite
+    // while already in a different family switches them into the new one —
+    // their old membership row is dropped (that family and its kids/stars
+    // are untouched, just no longer reachable by this user), matching
+    // "leave family" semantics rather than blocking the invite outright.
+    const existing = await getMyFamilyMembership(env, authUser.id);
+    if (existing && existing.family_id === invite.family_id) {
+      return jsonResponse({ error: 'You are already a member of this family.' }, 400);
+    }
+
     const displayName = (body.displayName || 'Parent').trim().slice(0, 30);
-    await env.DB.batch([
+    const writes = [];
+    if (existing) {
+      writes.push(env.DB.prepare(`DELETE FROM sq_family_member WHERE id = ?`).bind(existing.id));
+    }
+    writes.push(
       env.DB.prepare(`INSERT INTO sq_family_member (id, family_id, user_id, role, display_name) VALUES (?, ?, ?, 'PARTNER', ?)`)
         .bind(newId('mem'), invite.family_id, authUser.id, displayName),
       env.DB.prepare(`UPDATE sq_family_invite SET used_by = ?, used_at = CURRENT_TIMESTAMP WHERE code = ?`)
         .bind(authUser.id, code)
-    ]);
+    );
+    await env.DB.batch(writes);
 
     const family = await env.DB.prepare(`SELECT id, name, owner_user_id, created_at FROM sq_family WHERE id = ?`).bind(invite.family_id).first();
     return jsonResponse({ success: true, family });

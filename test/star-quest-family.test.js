@@ -97,6 +97,46 @@ describe('Star Quest: invites', () => {
     expect(res.status).toBe(404);
   });
 
+  it('rejects re-accepting an invite to the family you are already in', async () => {
+    const owner = await createTestUser('owner');
+    await createFamily(owner.token);
+    const invRes = await SELF.fetch(authedRequest('/api/sq/family/invite/create', { method: 'POST', token: owner.token }));
+    const invite = await invRes.json();
+
+    const res = await SELF.fetch(authedRequest('/api/sq/family/invite/accept', {
+      method: 'POST', token: owner.token, body: { code: invite.code }
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it('accepting an invite while already in a different family switches you into the new one', async () => {
+    const familyA = await createTestUser('ownerA');
+    await createFamily(familyA.token, 'Family A');
+    const familyB = await createTestUser('ownerB');
+    await createFamily(familyB.token, 'Family B');
+
+    // A user who already owns Family A gets invited into Family B.
+    const invRes = await SELF.fetch(authedRequest('/api/sq/family/invite/create', { method: 'POST', token: familyB.token }));
+    const invite = await invRes.json();
+
+    const switcher = await createTestUser('switcher');
+    const joinRes = await SELF.fetch(authedRequest('/api/sq/family/invite/accept', {
+      method: 'POST', token: switcher.token, body: { code: invite.code, displayName: 'Auntie' }
+    }));
+    expect(joinRes.status).toBe(200);
+
+    const meRes = await SELF.fetch(authedRequest('/api/sq/family/me', { token: switcher.token }));
+    const meData = await meRes.json();
+    expect(meData.family).not.toBeNull();
+    expect(meData.myRole).toBe('PARTNER');
+
+    // Family A itself is untouched — still owned by its original owner.
+    const familyAMe = await SELF.fetch(authedRequest('/api/sq/family/me', { token: familyA.token }));
+    const familyAData = await familyAMe.json();
+    expect(familyAData.family).not.toBeNull();
+    expect(familyAData.myRole).toBe('OWNER');
+  });
+
   it('only the owner can remove a partner', async () => {
     const owner = await createTestUser('owner');
     await createFamily(owner.token);

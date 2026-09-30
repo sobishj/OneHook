@@ -42,6 +42,7 @@ class StarQuestParent {
     this.currentTab = 'today';
     this.pendingStars = 2;
     this.pendingReason = SQ_REASONS[0];
+    this.pendingInvites = [];
   }
 
   esc(str) {
@@ -82,6 +83,10 @@ class StarQuestParent {
     this.members = familyData.members || [];
     this.kids = familyData.kids || [];
     if (!this.selectedKidId && this.kids.length > 0) this.selectedKidId = this.kids[0].id;
+    // Invites addressed to my email stay visible here even once I'm already
+    // in a family — e.g. a second invite from another household — not just
+    // during onboarding, which only runs before a family exists at all.
+    this.pendingInvites = await window.sqApi.pendingInvites().then((r) => r.invites || []).catch(() => []);
     await this.render();
   }
 
@@ -119,6 +124,7 @@ class StarQuestParent {
           <button class="sq-tab ${this.currentTab === 'today' ? 'active' : ''}" data-tab="today">Today</button>
           <button class="sq-tab ${this.currentTab === 'family' ? 'active' : ''}" data-tab="family">Family</button>
           <button class="sq-tab ${this.currentTab === 'rewards' ? 'active' : ''}" data-tab="rewards">Rewards</button>
+          <button class="sq-tab ${this.currentTab === 'requests' ? 'active' : ''}" data-tab="requests">📬 Requests${this.pendingInvites.length > 0 ? `<span class="sq-tab-badge">${this.pendingInvites.length}</span>` : ''}</button>
         </nav>
 
         ${this.kids.length > 0 ? `
@@ -133,7 +139,8 @@ class StarQuestParent {
         ` : ''}
 
         <div id="sq-tab-content" class="sq-tab-content">
-          ${this.kids.length === 0 ? this.renderNoKidsState() :
+          ${this.currentTab === 'requests' ? this.renderRequestsTab() :
+            this.kids.length === 0 ? this.renderNoKidsState() :
             this.currentTab === 'today' ? this.renderTodayTab(kid, goals, history) :
             this.currentTab === 'family' ? this.renderFamilyTab() :
             this.renderRewardsTab(kid, goals)}
@@ -154,6 +161,42 @@ class StarQuestParent {
         <button class="btn btn-primary" id="sq-add-kid-empty-btn">+ Add a Kid</button>
       </div>
       ${this.renderAddKidModal()}
+    `;
+  }
+
+  // Invites addressed to my account's email, still open — lets an already
+  // set-up parent (owner or partner of some family) accept or decline a
+  // join request without needing to leave the app first. Accepting one
+  // switches me into that family (see /family/invite/accept).
+  renderRequestsTab() {
+    if (this.pendingInvites.length === 0) {
+      return `
+        <div class="sq-empty-state">
+          <div class="sq-empty-icon">📬</div>
+          <h2>No requests</h2>
+          <p>Invitations sent to your account's email will show up here.</p>
+        </div>
+      `;
+    }
+    return `
+      <div class="sq-invite-requests">
+        ${this.pendingInvites.map((inv) => `
+          <div class="sq-invite-request-card" data-invite-code="${this.esc(inv.code)}">
+            <p class="sq-invite-request-text">
+              <strong>${this.esc(inv.inviter_display_name || inv.inviter_username || 'A family member')}</strong>
+              invited you to join <strong>${this.esc(inv.family_name || 'their family')}</strong>.
+            </p>
+            <div class="sq-invite-request-form">
+              <input type="text" class="sq-invite-request-name" placeholder="Your name (e.g. Mummy, Papa)" maxlength="30">
+              <p class="sq-invite-request-error hidden"></p>
+              <div class="sq-invite-request-actions">
+                <button type="button" class="btn btn-secondary btn-sm sq-req-decline-btn" data-code="${this.esc(inv.code)}">Decline</button>
+                <button type="button" class="btn btn-primary btn-sm sq-req-accept-btn" data-code="${this.esc(inv.code)}">Accept</button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
     `;
   }
 
@@ -483,6 +526,47 @@ class StarQuestParent {
       btn.addEventListener('click', async () => {
         await window.sqApi.undoStar(btn.dataset.undoId).catch(() => {});
         this.render();
+      });
+    });
+
+    this.mountEl.querySelectorAll('.sq-req-decline-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          await window.sqApi.declineInvite(btn.dataset.code);
+          this.pendingInvites = this.pendingInvites.filter((i) => i.code !== btn.dataset.code);
+          this.render();
+        } catch (err) {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    this.mountEl.querySelectorAll('.sq-req-accept-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.sq-invite-request-card');
+        const nameInput = card.querySelector('.sq-invite-request-name');
+        const errorEl = card.querySelector('.sq-invite-request-error');
+        const displayName = nameInput.value.trim();
+        errorEl.classList.add('hidden');
+        if (!displayName) {
+          nameInput.focus();
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Joining…';
+        try {
+          await window.sqApi.acceptInvite(btn.dataset.code, displayName);
+          // Membership (and possibly which family I'm in) just changed —
+          // a full reboot re-fetches everything rather than trying to
+          // patch this.family/this.kids/etc. in place.
+          if (window.boot) await window.boot();
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = 'Accept';
+          errorEl.textContent = err.message || 'Could not join this family.';
+          errorEl.classList.remove('hidden');
+        }
       });
     });
 

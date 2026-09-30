@@ -154,6 +154,15 @@
   text-align: center;
 }
 
+.sq-invite-request-error {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+}
+
 .sq-back-link {
   display: block;
   text-align: center;
@@ -239,6 +248,22 @@
 .sq-tab.active {
   background: var(--primary);
   color: #fff;
+}
+
+.sq-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--danger, #ef4444);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .sq-kid-chips {
@@ -1325,6 +1350,22 @@ img.sq-kid-chip-avatar {
   0% { transform: translateY(0) rotate(0deg); opacity: 0; }
   10% { opacity: 1; }
   100% { transform: translateY(110vh) rotate(var(--fall-rotate, 360deg)); opacity: 0; }
+}
+
+/* ---- Fireworks, launching up from the bottom of the viewport (see .js) ---- */
+.sqk-firework-particle {
+  position: fixed;
+  bottom: -20px;
+  pointer-events: none;
+  z-index: 500;
+  animation: sqk-firework-rise var(--rise-duration, 1.3s) cubic-bezier(0.15, 0.65, 0.35, 1) var(--rise-delay, 0s) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes sqk-firework-rise {
+  0% { transform: translateY(0) scale(0.6) rotate(0deg); opacity: 1; }
+  70% { transform: translateY(var(--rise-height, -70vh)) scale(1.3) rotate(var(--rise-rotate, 20deg)); opacity: 1; }
+  100% { transform: translateY(calc(var(--rise-height, -70vh) - 40px)) scale(0.4) rotate(var(--rise-rotate, 20deg)); opacity: 0; }
 }
 
 .sqk-empty-hint {
