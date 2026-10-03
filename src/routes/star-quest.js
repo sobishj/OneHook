@@ -147,6 +147,28 @@ async function withProgress(env, goal) {
   return { ...goal, progress };
 }
 
+// ---- Unlock reconciliation: /star/give only flips a goal to UNLOCKED on
+// the star that crosses its target, so a goal that's *already* met without
+// a new star — created after the stars were earned, or edited down to a
+// target the kid has already passed (70 -> 30 with 35 stars) — would sit
+// ACTIVE forever. This re-checks every ACTIVE goal for the kid and unlocks
+// any whose progress has reached its target. Run on every goal read and
+// after create/update so the scratch card always appears. ----
+async function unlockReachedGoals(env, kidId) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, period, target_stars FROM sq_goal WHERE kid_id = ? AND status = 'ACTIVE'`
+  ).bind(kidId).all();
+  const ops = [];
+  for (const g of (results || [])) {
+    if ((await computeGoalProgress(env, kidId, g.period)) >= g.target_stars) {
+      ops.push(env.DB.prepare(
+        `UPDATE sq_goal SET status = 'UNLOCKED', unlocked_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'ACTIVE'`
+      ).bind(g.id));
+    }
+  }
+  if (ops.length) await env.DB.batch(ops);
+}
+
 // ---- Secret-hiding: strip reward_secret* fields unless the goal has
 // progressed past ACTIVE. Kids have no separate login (they're sub-profiles,
 // not accounts), so kid mode runs under the same parent JWT as parent mode —
@@ -601,6 +623,7 @@ export async function handleStarQuest(request, env, pathname, method) {
     await env.DB.prepare(
       `INSERT INTO sq_goal (id, kid_id, period, target_stars, reward_secret, reward_secret_emoji, reward_hint, reward_hint_emoji, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(goalId, kidId, period, targetStars, rewardSecret || null, rewardSecretEmoji || null, rewardHint || null, rewardHintEmoji || null, authUser.id).run();
+    await unlockReachedGoals(env, kidId);
 
     const goal = await env.DB.prepare(`SELECT * FROM sq_goal WHERE id = ?`).bind(goalId).first();
     return jsonResponse({ goal: sanitizeGoal(await withProgress(env, goal)) });
@@ -627,6 +650,8 @@ export async function handleStarQuest(request, env, pathname, method) {
     await env.DB.prepare(
       `UPDATE sq_goal SET target_stars = ?, reward_secret = ?, reward_secret_emoji = ?, reward_hint = ?, reward_hint_emoji = ? WHERE id = ?`
     ).bind(targetStars, rewardSecret, rewardSecretEmoji, rewardHint, rewardHintEmoji, body.goalId).run();
+    // Lowering the target below what the kid already has unlocks it now.
+    await unlockReachedGoals(env, goal.kid_id);
 
     const updated = await env.DB.prepare(`SELECT * FROM sq_goal WHERE id = ?`).bind(body.goalId).first();
     return jsonResponse({ goal: sanitizeGoal(await withProgress(env, updated)) });
@@ -639,6 +664,7 @@ export async function handleStarQuest(request, env, pathname, method) {
     if (!SQ_GOAL_PERIODS.includes(period)) return jsonResponse({ error: 'period (week/month/year) is required.' }, 400);
     const access = await assertKidAccess(env, authUser.id, kidId);
     if (!access) return jsonResponse({ error: 'Access denied.' }, 403);
+    await unlockReachedGoals(env, kidId);
 
     const goal = await env.DB.prepare(
       `SELECT * FROM sq_goal WHERE kid_id = ? AND period = ? ORDER BY created_at DESC LIMIT 1`
@@ -653,6 +679,7 @@ export async function handleStarQuest(request, env, pathname, method) {
     const kidId = url.searchParams.get('kidId');
     const access = await assertKidAccess(env, authUser.id, kidId);
     if (!access) return jsonResponse({ error: 'Access denied.' }, 403);
+    await unlockReachedGoals(env, kidId);
 
     const goals = {};
     for (const period of SQ_GOAL_PERIODS) {
@@ -669,11 +696,18 @@ export async function handleStarQuest(request, env, pathname, method) {
     const kidId = url.searchParams.get('kidId');
     const access = await assertKidAccess(env, authUser.id, kidId);
     if (!access) return jsonResponse({ error: 'Access denied.' }, 403);
+    await unlockReachedGoals(env, kidId);
 
     const { results } = await env.DB.prepare(
       `SELECT * FROM sq_goal WHERE kid_id = ? AND status IN ('REVEALED', 'REDEEMED') ORDER BY created_at DESC`
     ).bind(kidId).all();
-    return jsonResponse({ goals: (results || []).map(sanitizeGoal) });
+    // `pending` = unlocked but not yet scratched — Kid View's Achievements
+    // tab shows these as scratch cards waiting to be opened. Kept separate
+    // from `goals` so the parent memory wall stays "rewards opened".
+    const { results: pending } = await env.DB.prepare(
+      `SELECT * FROM sq_goal WHERE kid_id = ? AND status = 'UNLOCKED' ORDER BY unlocked_at ASC`
+    ).bind(kidId).all();
+    return jsonResponse({ goals: (results || []).map(sanitizeGoal), pending: (pending || []).map(sanitizeGoal) });
   }
 
   if (sqPath === '/goal/reveal' && method === 'POST') {

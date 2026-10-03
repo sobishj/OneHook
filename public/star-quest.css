@@ -1164,26 +1164,34 @@ img.sq-kid-chip-avatar {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 18px;
+  width: 100%;
+  text-align: left;
+  border: 3px solid #fde68a;
+  background: linear-gradient(135deg, #fffbeb, #fff);
+  border-radius: 22px;
   padding: 14px 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 5px 0 rgba(180, 83, 9, 0.25), 0 8px 16px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font: inherit;
 }
 
 .sqk-achievement-emoji {
-  font-size: 32px;
+  font-size: 38px;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .sqk-achievement-info {
   min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sqk-achievement-text {
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 800;
+  font-size: 17px;
   color: #78350f;
   margin-bottom: 2px;
 }
@@ -1192,6 +1200,123 @@ img.sq-kid-chip-avatar {
   font-size: 13px;
   color: #92400e;
   opacity: 0.85;
+}
+
+.sqk-achievement-trophy {
+  font-size: 26px;
+  animation: sqk-bob 2.2s ease-in-out infinite;
+}
+
+.sqk-card-wiggle {
+  animation: sqk-jar-wiggle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ---- Waiting scratch cards on the Achievements tab ---- */
+.sqk-pending-rewards {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sqk-pending-rewards-title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(120, 53, 15, 0.35);
+  animation: sqk-twinkle 1.6s ease-in-out infinite;
+}
+
+.sqk-gift-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 96px;
+  padding: 16px 18px;
+  border: 4px solid #fff;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #f59e0b, #ec4899 55%, #8b5cf6);
+  box-shadow: 0 7px 0 rgba(91, 33, 182, 0.45), 0 12px 24px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sqk-gift-card:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 rgba(91, 33, 182, 0.45), 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Shimmer sweeping across the gift card. */
+.sqk-gift-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: sqk-shimmer 2.2s ease-in-out infinite;
+}
+
+.sqk-gift-emoji {
+  font-size: 54px;
+  line-height: 1;
+  animation: sqk-gift-shake 1.4s ease-in-out infinite;
+}
+
+.sqk-gift-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sqk-gift-title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 20px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+}
+
+.sqk-gift-meta {
+  font-weight: 700;
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.sqk-tab-badge {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  animation: sqk-badge-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes sqk-shimmer {
+  0% { left: -60%; }
+  60%, 100% { left: 130%; }
+}
+@keyframes sqk-gift-shake {
+  0%, 60%, 100% { transform: rotate(0) scale(1); }
+  70% { transform: rotate(-12deg) scale(1.1); }
+  80% { transform: rotate(10deg) scale(1.1); }
+  90% { transform: rotate(-6deg) scale(1.05); }
+}
+@keyframes sqk-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .sqk-switch-kid-btn {
@@ -1207,26 +1332,61 @@ img.sq-kid-chip-avatar {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
-.sqk-jar-wrap {
+/* The jar: a holder (tap/drop target) with a pulsing glow behind, a lid
+   on top, the glass body, and the 🎯 progress pill under it. */
+.sqk-jar-holder {
   position: relative;
-  width: 180px;
-  height: 240px;
   /* .sqk-screen is a fixed-height (top:0/bottom:0) flex column — without
      this, the default flex-shrink:1 squashes the jar down to a sliver
      whenever the rest of the screen's content (topbar + tabs + stat +
      pending stars) doesn't all fit in the viewport, instead of just
      letting the screen scroll (it already has overflow-y: auto). */
   flex-shrink: 0;
-  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 18px 0 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sqk-jar-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  transform: translate(-50%, -55%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(254, 240, 138, 0.45) 35%, transparent 68%);
+  animation: sqk-glow-pulse 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.sqk-jar-lid {
+  position: relative;
+  z-index: 2;
+  width: 132px;
+  height: 22px;
+  margin-bottom: -6px;
+  border-radius: 10px 10px 6px 6px;
+  background: repeating-linear-gradient(90deg, #f472b6 0 12px, #ec4899 12px 24px);
+  border: 4px solid #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+}
+
+.sqk-jar-wrap {
+  position: relative;
+  width: 180px;
+  height: 240px;
   border: 7px solid #fff;
   border-radius: 26px 26px 46px 46px;
-  background: rgba(255, 255, 255, 0.3);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18));
   overflow: hidden;
-  cursor: pointer;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22), inset 0 2px 14px rgba(255, 255, 255, 0.6);
 }
 
 .sqk-jar-fill {
@@ -1234,9 +1394,125 @@ img.sq-kid-chip-avatar {
   bottom: 0;
   left: 0;
   width: 100%;
+  overflow: hidden;
   background: linear-gradient(180deg, #fef08a, #fbbf24 45%, #f59e0b);
   transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: inset 0 4px 12px rgba(255, 255, 255, 0.6);
+}
+
+/* Wavy honey-like surface on top of the fill. */
+.sqk-jar-fill::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -50%;
+  width: 200%;
+  height: 20px;
+  background: radial-gradient(circle at 10px -2px, transparent 11px, #fef08a 12px) 0 0 / 20px 20px repeat-x;
+  animation: sqk-wave 3s linear infinite;
+}
+
+.sqk-jar-bubble {
+  position: absolute;
+  bottom: -20px;
+  font-size: 14px;
+  opacity: 0;
+  animation: sqk-bubble-up 3.2s ease-in var(--d, 0s) infinite;
+}
+
+/* Diagonal glass highlight across the jar. */
+.sqk-jar-shine {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  width: 22px;
+  height: 70%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sqk-jar-goal {
+  position: relative;
+  z-index: 2;
+  margin-top: -14px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #fff;
+  color: #9d174d;
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+/* Tap: squish-and-wiggle. Drop: a quick "gulp" bounce. */
+.sqk-jar-holder.sqk-jar-tapped .sqk-jar-wrap,
+.sqk-jar-holder.sqk-jar-tapped .sqk-jar-lid {
+  animation: sqk-jar-wiggle 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sqk-jar-holder.sqk-jar-tapped .sqk-jar-glow {
+  animation: sqk-glow-flash 0.8s ease-out;
+}
+.sqk-jar-holder.sqk-jar-gulp .sqk-jar-wrap {
+  animation: sqk-jar-gulp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sqk-glow-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -55%) scale(0.95); }
+  50% { opacity: 1; transform: translate(-50%, -55%) scale(1.08); }
+}
+@keyframes sqk-glow-flash {
+  0% { opacity: 1; transform: translate(-50%, -55%) scale(1); }
+  40% { opacity: 1; transform: translate(-50%, -55%) scale(1.35); }
+  100% { opacity: 0.8; transform: translate(-50%, -55%) scale(1); }
+}
+@keyframes sqk-jar-wiggle {
+  0% { transform: scale(1) rotate(0); }
+  20% { transform: scale(1.1, 0.9) rotate(-6deg); }
+  40% { transform: scale(0.95, 1.08) rotate(5deg); }
+  60% { transform: scale(1.04, 0.97) rotate(-3deg); }
+  80% { transform: scale(1) rotate(2deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes sqk-jar-gulp {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08, 0.92); }
+  70% { transform: scale(0.97, 1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes sqk-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(20px); }
+}
+@keyframes sqk-bubble-up {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-200px) scale(1.1) rotate(40deg); opacity: 0; }
+}
+
+/* Stars popping out of the jar's lid on tap (see spawnJarFountain). */
+.sqk-fountain-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 500;
+  opacity: 0;
+  animation: sqk-fountain 1.2s cubic-bezier(0.2, 0.7, 0.4, 1) var(--delay, 0s) forwards;
+}
+@keyframes sqk-fountain {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  60% { transform: translate(calc(-50% + var(--dx) * 0.8), calc(-50% + var(--dy))) scale(1.2) rotate(180deg); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) scale(0.8) rotate(300deg); opacity: 0; }
+}
+
+.sqk-collected-stat.sqk-stat-pop {
+  animation: sqk-stat-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes sqk-stat-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); }
+  100% { transform: scale(1); }
 }
 
 .sqk-jar-mascot {
@@ -1285,9 +1561,9 @@ img.sq-kid-chip-avatar {
 }
 
 /* ---- Drop zone highlight while a pending star is being dragged over the jar ---- */
-.sqk-jar-wrap.sqk-jar-target {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.5), 0 0 0 6px rgba(255, 255, 255, 0.6);
-  transform: scale(1.03);
+.sqk-jar-holder.sqk-jar-target .sqk-jar-wrap {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 2px 10px rgba(255, 255, 255, 0.5), 0 0 0 8px rgba(255, 255, 255, 0.7), 0 0 40px 12px rgba(254, 240, 138, 0.9);
+  transform: scale(1.06);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -1492,6 +1768,237 @@ img.sq-kid-chip-avatar {
   background: rgba(255, 255, 255, 0.75);
 }
 
+/* ---- Background layers: ambient decor + celebration scenes ----
+   Both sit behind every other child of .sqk-screen (which get z-index 1)
+   and clip their own overflow so drifting clouds never cause a
+   horizontal scroll. */
+.sqk-screen > *:not(.sqk-ambient):not(.sqk-scene) {
+  position: relative;
+  z-index: 1;
+}
+
+.sqk-ambient, .sqk-scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sqk-ambient-sparkle {
+  position: absolute;
+  font-size: 16px;
+  opacity: 0.6;
+  animation: sqk-twinkle 3s ease-in-out var(--d, 0s) infinite;
+}
+
+.sqk-cloud {
+  position: absolute;
+  left: -140px;
+  width: 120px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  animation: sqk-cloud-drift 26s linear var(--d, 0s) infinite;
+}
+.sqk-cloud::before, .sqk-cloud::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.sqk-cloud::before { width: 54px; height: 54px; top: -26px; left: 18px; }
+.sqk-cloud::after { width: 40px; height: 40px; top: -18px; left: 60px; }
+.sqk-cloud-small { transform: scale(0.65); animation-duration: 34s; }
+
+@keyframes sqk-cloud-drift {
+  from { left: -140px; }
+  to { left: 110%; }
+}
+
+.sqk-scene {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.sqk-scene.show { opacity: 1; }
+
+.sqk-scene-space { background: radial-gradient(ellipse at 30% 20%, #3b1d70 0%, #1e1b4b 45%, #0b1026 100%); }
+.sqk-scene-galaxy { background: radial-gradient(ellipse at 70% 30%, #6d28d9 0%, #312e81 45%, #0f172a 100%); }
+.sqk-scene-night { background: linear-gradient(180deg, #0b1026 0%, #1e3a8a 70%, #312e81 100%); }
+.sqk-scene-love { background: linear-gradient(180deg, #fbcfe8 0%, #f9a8d4 45%, #f472b6 100%); }
+.sqk-scene-garden { background: linear-gradient(180deg, #7dd3fc 0%, #bae6fd 55%, #bbf7d0 100%); }
+.sqk-scene-party { background: radial-gradient(circle at 50% 0%, #a21caf 0%, #581c87 55%, #2e1065 100%); }
+
+/* White labels sit over both dark (space) and light (garden) scenes, so
+   give them a soft dark halo that reads on either. */
+.sqk-collected-stat, .sqk-pending-label {
+  text-shadow: 0 1px 0 rgba(120, 53, 15, 0.3), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.sqk-twinkle-dot {
+  position: absolute;
+  width: var(--s, 3px);
+  height: var(--s, 3px);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.8);
+  animation: sqk-twinkle 1.4s ease-in-out var(--d, 0s) infinite;
+}
+
+.sqk-meadow {
+  position: absolute;
+  left: -10%;
+  bottom: 0;
+  width: 120%;
+  height: 18%;
+  border-radius: 50% 50% 0 0;
+  background: linear-gradient(180deg, #4ade80, #16a34a);
+}
+
+.sqk-aurora {
+  position: absolute;
+  top: 8%;
+  left: -20%;
+  width: 140%;
+  height: 30%;
+  background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.55), rgba(96, 165, 250, 0.5), rgba(244, 114, 182, 0.45), transparent);
+  filter: blur(18px);
+  animation: sqk-aurora 5s ease-in-out infinite alternate;
+}
+.sqk-aurora-2 { top: 40%; animation-delay: -2.5s; opacity: 0.7; }
+@keyframes sqk-aurora {
+  from { transform: translateX(-8%) skewY(-6deg); }
+  to { transform: translateX(8%) skewY(6deg); }
+}
+
+.sqk-spotlight {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  width: 120px;
+  height: 130%;
+  transform-origin: top center;
+  background: linear-gradient(180deg, var(--c), transparent 80%);
+  opacity: 0.45;
+  filter: blur(6px);
+  animation: sqk-spotlight 3.6s ease-in-out var(--d, 0s) infinite alternate;
+}
+@keyframes sqk-spotlight {
+  from { transform: translateX(-50%) rotate(-35deg); }
+  to { transform: translateX(-50%) rotate(35deg); }
+}
+
+.sqk-burst {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--c);
+  opacity: 0;
+  animation: sqk-burst 1.6s ease-out var(--d, 0s) infinite;
+}
+@keyframes sqk-burst {
+  0% { transform: scale(0.2); opacity: 1; box-shadow: 0 0 0 4px var(--c), 0 0 20px 6px var(--c); }
+  100% { transform: scale(9); opacity: 0; box-shadow: 0 0 0 1px var(--c), 0 0 20px 6px transparent; }
+}
+
+/* Scene emoji + their motions. */
+.sqk-fx {
+  position: absolute;
+  line-height: 1;
+  animation-delay: var(--d, 0s);
+  animation-fill-mode: both;
+}
+.sqk-fx-float { animation: sqk-fx-float 3s ease-in-out var(--d, 0s) infinite; }
+.sqk-fx-spin { animation: sqk-fx-spin 8s linear infinite; }
+.sqk-fx-fly { animation: sqk-fx-fly 3.2s ease-in-out var(--d, 0s) both; }
+.sqk-fx-shoot { animation: sqk-fx-shoot 1.6s ease-in var(--d, 0s) both; }
+.sqk-fx-drift { animation: sqk-fx-drift 6s ease-in-out infinite alternate; }
+.sqk-fx-rise { animation: sqk-fx-rise 3.2s ease-out var(--d, 0s) both; }
+.sqk-fx-flutter { animation: sqk-fx-flutter 2.4s ease-in-out var(--d, 0s) infinite; }
+.sqk-fx-sway { transform-origin: bottom center; animation: sqk-fx-sway 1.6s ease-in-out var(--d, 0s) infinite alternate; }
+.sqk-fx-swing { transform-origin: top center; animation: sqk-fx-swing 1.8s ease-in-out infinite alternate; }
+
+@keyframes sqk-fx-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-14px) rotate(4deg); }
+}
+@keyframes sqk-fx-spin { to { transform: rotate(360deg); } }
+@keyframes sqk-fx-fly {
+  0% { transform: translate(0, 0) rotate(45deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate(110vw, -70vh) rotate(45deg); opacity: 1; }
+}
+@keyframes sqk-fx-shoot {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate(-90vw, 50vh); opacity: 0; }
+}
+@keyframes sqk-fx-drift {
+  from { transform: translate(0, 0) rotate(-10deg); }
+  to { transform: translate(-60px, 30px) rotate(10deg); }
+}
+@keyframes sqk-fx-rise {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  50% { transform: translate(14px, -50vh) scale(1); }
+  100% { transform: translate(-10px, -105vh) scale(1.1); opacity: 0.2; }
+}
+@keyframes sqk-fx-flutter {
+  0%, 100% { transform: translate(0, 0) scaleX(1); }
+  25% { transform: translate(30px, -20px) scaleX(0.6); }
+  50% { transform: translate(60px, 0) scaleX(1); }
+  75% { transform: translate(30px, 16px) scaleX(0.6); }
+}
+@keyframes sqk-fx-sway {
+  from { transform: rotate(-10deg); }
+  to { transform: rotate(10deg); }
+}
+@keyframes sqk-fx-swing {
+  from { transform: rotate(-14deg); }
+  to { transform: rotate(14deg); }
+}
+
+/* ---- Scratch screen stage: rotating sunburst behind the card ---- */
+.sqk-scratch-stage {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sqk-sunburst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.28) 0deg 12deg, transparent 12deg 24deg);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+  animation: sqk-fx-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+.sqk-scratch-stage > :not(.sqk-sunburst) {
+  position: relative;
+}
+
+.sqk-scratch-wrap {
+  border: 6px solid #fff;
+}
+
+.sqk-reveal-pop {
+  animation: sqk-bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* ---- Playful motion (all disabled under prefers-reduced-motion) ---- */
 .sqk-bounce-in {
   animation: sqk-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -1515,11 +2022,27 @@ img.sq-kid-chip-avatar {
 
 @media (prefers-reduced-motion: reduce) {
   .sqk-jar-fill { transition: none; }
-  .sqk-jar-mascot, .sqk-sparkle-decor, .sqk-bounce-in {
+  .sqk-jar-mascot, .sqk-sparkle-decor, .sqk-bounce-in,
+  .sqk-jar-glow, .sqk-jar-fill::before, .sqk-jar-bubble, .sqk-cloud, .sqk-ambient-sparkle,
+  .sqk-gift-emoji, .sqk-gift-card::after, .sqk-tab-badge, .sqk-pending-rewards-title,
+  .sqk-achievement-trophy, .sqk-sunburst, .sqk-reveal-pop, .sqk-fx, .sqk-twinkle-dot {
     animation: none !important;
   }
-  .sqk-jar-wrap.sqk-jar-target {
+  .sqk-jar-bubble { display: none; }
+  .sqk-jar-holder.sqk-jar-target .sqk-jar-wrap {
     transform: none;
     transition: none;
   }
 }
+
+/* Readability over the changing scene backgrounds. */
+.sqk-view-tab:not(.active), .sqk-period-btn:not(.active) {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.sqk-scratch-stage .sqk-scratch-hint {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+.sqk-ambient .sqk-cloud { opacity: 0.6; }

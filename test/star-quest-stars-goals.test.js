@@ -192,6 +192,69 @@ describe('Star Quest: family membership enforced on star/goal routes', () => {
   });
 });
 
+describe('Star Quest: goals already met unlock without a new star', () => {
+  async function giveStars(token, kidId, total) {
+    for (let left = total; left > 0; left -= 3) {
+      await SELF.fetch(authedRequest('/api/sq/star/give', {
+        method: 'POST', token, body: { kidId, stars: Math.min(3, left), reason: 'x', reasonIcon: 'star' }
+      }));
+    }
+  }
+
+  it('a goal created after the kid already has enough stars is UNLOCKED immediately', async () => {
+    const owner = await createTestUser('owner');
+    await createFamily(owner.token);
+    const kid = await addKid(owner.token);
+    await giveStars(owner.token, kid.id, 6);
+
+    const goal = await createGoal(owner.token, kid.id, 5, 'week');
+    expect(goal.status).toBe('UNLOCKED');
+    expect(goal.reward_secret).toBe('Trip to the zoo!');
+  });
+
+  it('lowering an active target below current progress unlocks it (70 -> 30 with 35 stars)', async () => {
+    const owner = await createTestUser('owner');
+    await createFamily(owner.token);
+    const kid = await addKid(owner.token);
+    const goal = await createGoal(owner.token, kid.id, 70, 'week');
+    await giveStars(owner.token, kid.id, 35);
+
+    const res = await SELF.fetch(authedRequest('/api/sq/goal/update', {
+      method: 'POST', token: owner.token, body: { goalId: goal.id, targetStars: 30 }
+    }));
+    const updated = (await res.json()).goal;
+    expect(updated.status).toBe('UNLOCKED');
+    expect(updated.progress).toBe(35);
+  });
+
+  it('goal/history returns unlocked-but-unscratched goals as pending, then moves them to goals once revealed', async () => {
+    const owner = await createTestUser('owner');
+    await createFamily(owner.token);
+    const kid = await addKid(owner.token);
+    const goal = await createGoal(owner.token, kid.id, 10, 'month');
+    await giveStars(owner.token, kid.id, 9);
+    // Stale ACTIVE goal that's already met — simulates rows written before this fix.
+    await SELF.fetch(authedRequest('/api/sq/goal/update', {
+      method: 'POST', token: owner.token, body: { goalId: goal.id, targetStars: 12 }
+    }));
+
+    let hist = await (await SELF.fetch(authedRequest(`/api/sq/goal/history?kidId=${kid.id}`, { token: owner.token }))).json();
+    expect(hist.pending.length).toBe(0);
+
+    await SELF.fetch(authedRequest('/api/sq/goal/update', {
+      method: 'POST', token: owner.token, body: { goalId: goal.id, targetStars: 9 }
+    }));
+    hist = await (await SELF.fetch(authedRequest(`/api/sq/goal/history?kidId=${kid.id}`, { token: owner.token }))).json();
+    expect(hist.pending.map((g) => g.id)).toEqual([goal.id]);
+    expect(hist.goals.length).toBe(0);
+
+    await SELF.fetch(authedRequest('/api/sq/goal/reveal', { method: 'POST', token: owner.token, body: { goalId: goal.id } }));
+    hist = await (await SELF.fetch(authedRequest(`/api/sq/goal/history?kidId=${kid.id}`, { token: owner.token }))).json();
+    expect(hist.pending.length).toBe(0);
+    expect(hist.goals.map((g) => g.id)).toEqual([goal.id]);
+  });
+});
+
 describe('Star Quest: star undo', () => {
   it('soft-deletes a star entry and it drops out of history', async () => {
     const owner = await createTestUser('owner');

@@ -125,6 +125,12 @@ const SqSounds = {
     [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => sqPlayTone(freq, 0.3, i * 0.09));
   },
 
+  // Quick twinkly run up the scale — the Kid View jar-tap "magic" sound.
+  magic() {
+    if (!sqSoundEnabled()) return;
+    [1046.5, 1318.5, 1568, 2093, 2637].forEach((freq, i) => sqPlayTone(freq, 0.12, i * 0.045, 0.12));
+  },
+
   scratchTick() {
     if (!sqSoundEnabled()) return;
     sqPlayTone(200 + Math.random() * 100, 0.04, 0, 0.05);

@@ -15,16 +15,94 @@ const SQK_GOAL_PERIODS = ['week', 'month', 'year'];
 // One of these is picked at random each time a star lands in the jar, so
 // repeated drops don't all look the same. 'fall' particles drift down from
 // the top of the screen (stars, hearts, flowers, confetti); 'firework'
-// particles launch up from the bottom instead, like a real firework.
+// particles launch up from the bottom instead, like a real firework. Each
+// theme also swaps the screen's background to a matching scene (see
+// SQK_SCENES) — stars fly through space, flowers bloom in a garden, etc.
 const SQK_CELEBRATION_THEMES = [
-  { emojis: ['⭐', '🌟', '✨'], mode: 'fall' },
-  { emojis: ['💖', '💕', '💗', '❤️'], mode: 'fall' },
-  { emojis: ['🌸', '🌺', '🌹', '🌷'], mode: 'fall' },
-  { emojis: ['🎉', '🎊', '✨'], mode: 'fall' },
-  { emojis: ['💫', '⭐', '✨'], mode: 'fall' },
-  { emojis: ['🎆', '🎇', '✨'], mode: 'firework' },
-  { emojis: ['🧨', '✨', '🎆'], mode: 'firework' }
+  { emojis: ['⭐', '🌟', '✨'], mode: 'fall', scene: 'space' },
+  { emojis: ['💖', '💕', '💗', '❤️'], mode: 'fall', scene: 'love' },
+  { emojis: ['🌸', '🌺', '🌹', '🌷'], mode: 'fall', scene: 'garden' },
+  { emojis: ['🎉', '🎊', '✨'], mode: 'fall', scene: 'party' },
+  { emojis: ['💫', '⭐', '✨'], mode: 'fall', scene: 'galaxy' },
+  { emojis: ['🎆', '🎇', '✨'], mode: 'firework', scene: 'night' },
+  { emojis: ['🧨', '✨', '🎆'], mode: 'firework', scene: 'night' }
 ];
+
+// Full-screen background scenes shown briefly behind the jar. `twinkles`
+// sprinkles blinking star dots; each `fx` entry is one emoji placed at
+// (x%, y%) and moved by a CSS motion class (.sqk-fx-<motion>). `extra` is
+// scene-specific decoration markup (aurora bands, spotlights, bursts).
+const SQK_SCENES = {
+  space: {
+    twinkles: 40,
+    fx: [
+      { e: '🪐', x: 8, y: 14, size: 54, motion: 'float' },
+      { e: '🌙', x: 78, y: 8, size: 46, motion: 'float', d: 0.6 },
+      { e: '🚀', x: -10, y: 80, size: 46, motion: 'fly' },
+      { e: '☄️', x: 90, y: 4, size: 34, motion: 'shoot', d: 0.4 },
+      { e: '🛰️', x: 70, y: 60, size: 32, motion: 'drift' },
+      { e: '👨‍🚀', x: 10, y: 55, size: 40, motion: 'float', d: 1 },
+      { e: '🌍', x: 80, y: 82, size: 50, motion: 'spin' }
+    ]
+  },
+  galaxy: {
+    twinkles: 30,
+    extra: '<div class="sqk-aurora"></div><div class="sqk-aurora sqk-aurora-2"></div>',
+    fx: [
+      { e: '🛸', x: -10, y: 30, size: 44, motion: 'fly' },
+      { e: '👽', x: 78, y: 70, size: 38, motion: 'float' },
+      { e: '🪐', x: 6, y: 78, size: 44, motion: 'float', d: 0.7 },
+      { e: '💫', x: 84, y: 12, size: 34, motion: 'spin' },
+      { e: '🌟', x: 20, y: 8, size: 30, motion: 'float', d: 0.3 }
+    ]
+  },
+  night: {
+    twinkles: 34,
+    extra: [12, 36, 62, 84, 50].map((x, i) => `<div class="sqk-burst" style="left:${x}%;top:${14 + (i % 3) * 16}%;--d:${(i * 0.35).toFixed(2)}s;--c:${['#f472b6', '#facc15', '#60a5fa', '#34d399', '#c084fc'][i]}"></div>`).join(''),
+    fx: [
+      { e: '🌙', x: 80, y: 6, size: 46, motion: 'float' },
+      { e: '🏰', x: 4, y: 84, size: 54, motion: 'none' },
+      { e: '🦉', x: 82, y: 82, size: 38, motion: 'float', d: 0.5 }
+    ]
+  },
+  love: {
+    extra: '<div class="sqk-cloud" style="top:10%;--d:0s"></div><div class="sqk-cloud" style="top:62%;--d:-6s"></div>',
+    fx: [
+      ...[8, 24, 42, 60, 76, 90].map((x, i) => ({ e: ['💖', '💗', '💕', '💓', '💞', '💝'][i], x, y: 100, size: 26 + (i % 3) * 8, motion: 'rise', d: i * 0.3 })),
+      { e: '🦄', x: 6, y: 18, size: 46, motion: 'float' },
+      { e: '🌈', x: 70, y: 4, size: 54, motion: 'float', d: 0.5 }
+    ]
+  },
+  garden: {
+    extra: '<div class="sqk-meadow"></div><div class="sqk-cloud" style="top:16%;--d:-3s"></div>',
+    fx: [
+      { e: '☀️', x: 76, y: 4, size: 58, motion: 'spin' },
+      { e: '🌈', x: 4, y: 6, size: 52, motion: 'float' },
+      { e: '🦋', x: 16, y: 40, size: 34, motion: 'flutter' },
+      { e: '🦋', x: 74, y: 48, size: 30, motion: 'flutter', d: 0.8 },
+      { e: '🐝', x: 48, y: 30, size: 26, motion: 'flutter', d: 0.4 },
+      ...['🌼', '🌷', '🌻', '🌸', '🌹', '🌼', '🌷'].map((e, i) => ({ e, x: 2 + i * 14, y: 88, size: 34, motion: 'sway', d: i * 0.15 }))
+    ]
+  },
+  party: {
+    extra: '<div class="sqk-spotlight" style="--c:#f472b6"></div><div class="sqk-spotlight" style="--c:#60a5fa;--d:-1.2s"></div><div class="sqk-spotlight" style="--c:#facc15;--d:-2.4s"></div>',
+    fx: [
+      { e: '🪩', x: 44, y: 2, size: 50, motion: 'swing' },
+      ...[6, 22, 70, 86, 38, 56].map((x, i) => ({ e: '🎈', x, y: 100, size: 34 + (i % 2) * 8, motion: 'rise', d: i * 0.25 })),
+      { e: '🥳', x: 6, y: 16, size: 40, motion: 'float' },
+      { e: '🎁', x: 80, y: 18, size: 36, motion: 'float', d: 0.5 }
+    ]
+  }
+};
+const SQK_SCENE_ORDER = ['space', 'garden', 'love', 'party', 'galaxy', 'night'];
+
+// D1's CURRENT_TIMESTAMP is "YYYY-MM-DD HH:MM:SS" in UTC with no zone —
+// Safari can't parse that at all and Chrome reads it as local time, so
+// normalise to ISO-UTC before handing it to Date.
+function sqkDate(s) {
+  if (!s) return new Date(NaN);
+  return new Date(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s) ? `${s.replace(' ', 'T')}Z` : s);
+}
 
 class StarQuestKid {
   constructor(mountEl) {
@@ -35,6 +113,11 @@ class StarQuestKid {
     this.goalPeriod = null;
     this.goal = null;
     this.history = [];
+    // Unlocked-but-unscratched rewards (any period) and already-opened
+    // ones, both from /goal/history — see renderAchievementsList().
+    this.pendingRewards = [];
+    this.achievementGoals = [];
+    this.scratchGoal = null;
     this.onExit = null;
   }
 
@@ -97,6 +180,7 @@ class StarQuestKid {
   renderWho() {
     this.mountEl.innerHTML = `
       <div class="sqk-screen sqk-who">
+        ${this.backdropHtml()}
         <div class="sqk-topbar">
           <button class="sqk-back-btn" id="sqk-back-to-parent">← Back</button>
           ${this.soundToggleHtml()}
@@ -136,28 +220,73 @@ class StarQuestKid {
 
   // A kid can have up to three concurrent goals — week/month/year — each
   // with its own jar/progress. this.goalPeriod picks which one is showing;
-  // it defaults to an already-UNLOCKED one (so a scratch card is never
-  // missed) or else the first period that actually has a goal.
+  // it defaults to the first period that actually has a goal. Any reward
+  // that's unlocked but not yet scratched (whatever its period) opens
+  // straight onto its scratch card, so a finished goal is never missed.
   async loadAndRenderJar() {
-    const [goalsRes, historyRes] = await Promise.all([
+    const [goalsRes, historyRes, rewardsRes] = await Promise.all([
       window.sqApi.listGoals(this.kid.id).catch(() => ({ goals: { week: null, month: null, year: null } })),
-      window.sqApi.starHistory(this.kid.id).catch(() => ({ entries: [] }))
+      window.sqApi.starHistory(this.kid.id).catch(() => ({ entries: [] })),
+      window.sqApi.goalHistory(this.kid.id).catch(() => ({ goals: [], pending: [] }))
     ]);
     this.goals = goalsRes.goals || { week: null, month: null, year: null };
     this.history = historyRes.entries || [];
+    this.achievementGoals = rewardsRes.goals || [];
+    this.pendingRewards = rewardsRes.pending || [];
 
     if (!this.goalPeriod || !this.goals[this.goalPeriod]) {
-      this.goalPeriod = SQK_GOAL_PERIODS.find((p) => this.goals[p] && this.goals[p].status === 'UNLOCKED')
-        || SQK_GOAL_PERIODS.find((p) => this.goals[p])
-        || 'week';
+      this.goalPeriod = SQK_GOAL_PERIODS.find((p) => this.goals[p]) || 'week';
     }
     this.goal = this.goals[this.goalPeriod];
 
-    if (this.goal && this.goal.status === 'UNLOCKED') {
-      this.renderScratch();
+    if (this.pendingRewards.length) {
+      this.openScratch(this.pendingRewards[0]);
       return;
     }
     this.renderJar();
+  }
+
+  // Ambient background for every kid screen: slow drifting clouds and
+  // floating sparkles, plus an empty .sqk-scene layer that showScene()
+  // fills on drops/taps. Both sit behind the screen's content.
+  backdropHtml() {
+    const sparkles = Array.from({ length: 8 }, (_, i) =>
+      `<span class="sqk-ambient-sparkle" style="left:${(i * 13 + 5) % 96}%;top:${(i * 29 + 12) % 90}%;--d:${(i * 0.6).toFixed(1)}s">${i % 2 ? '✨' : '⭐'}</span>`
+    ).join('');
+    return `
+      <div class="sqk-ambient" aria-hidden="true">
+        <div class="sqk-cloud" style="top:14%;--d:-4s"></div>
+        <div class="sqk-cloud sqk-cloud-small" style="top:46%;--d:-14s"></div>
+        ${sparkles}
+      </div>
+      <div class="sqk-scene" aria-hidden="true"></div>
+    `;
+  }
+
+  // Swaps the background to one of SQK_SCENES for a few seconds — fades
+  // in, plays its decorations, fades back out. A new call while one is
+  // showing just switches scene and restarts the timer.
+  showScene(name) {
+    if (window.SqSounds.reducedMotion) return;
+    const screen = this.mountEl.querySelector('.sqk-screen');
+    const layer = screen && screen.querySelector('.sqk-scene');
+    const scene = SQK_SCENES[name];
+    if (!layer || !scene) return;
+
+    const twinkles = Array.from({ length: scene.twinkles || 0 }, () =>
+      `<i class="sqk-twinkle-dot" style="left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;--d:${(Math.random() * 2).toFixed(2)}s;--s:${(2 + Math.random() * 3).toFixed(1)}px"></i>`
+    ).join('');
+    const fx = scene.fx.map((f) =>
+      `<span class="sqk-fx sqk-fx-${f.motion}" style="left:${f.x}%;top:${f.y}%;font-size:${f.size}px;--d:${f.d || 0}s">${f.e}</span>`
+    ).join('');
+
+    layer.className = `sqk-scene sqk-scene-${name}`;
+    layer.style.height = `${screen.scrollHeight}px`;
+    layer.innerHTML = twinkles + (scene.extra || '') + fx;
+    void layer.offsetWidth; // restart the fade-in when switching scenes
+    layer.classList.add('show');
+    clearTimeout(this.sceneTimer);
+    this.sceneTimer = setTimeout(() => layer.classList.remove('show'), 3400);
   }
 
   progressStars() {
@@ -182,7 +311,7 @@ class StarQuestKid {
     if (period === 'week') cutoff.setDate(now.getDate() - 7);
     else if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
     else if (period === 'year') cutoff.setFullYear(now.getFullYear() - 1);
-    return entries.filter((h) => new Date(h.created_at).getTime() >= cutoff.getTime());
+    return entries.filter((h) => sqkDate(h.created_at).getTime() >= cutoff.getTime());
   }
 
   renderJar() {
@@ -217,8 +346,15 @@ class StarQuestKid {
       }
     });
 
+    // Little stars bubbling up inside the jar's fill — only once there's
+    // something in it.
+    const bubbles = pct > 0
+      ? Array.from({ length: 7 }, (_, i) => `<span class="sqk-jar-bubble" style="left:${8 + i * 13}%;--d:${(i * 0.45).toFixed(2)}s">${i % 3 ? '⭐' : '✨'}</span>`).join('')
+      : '';
+
     this.mountEl.innerHTML = `
       <div class="sqk-screen sqk-jar-screen">
+        ${this.backdropHtml()}
         <div class="sqk-topbar">
           <button class="sqk-switch-kid-btn" id="sqk-switch-kid">🔄 ${this.esc(this.kid.name)}</button>
           <div class="sqk-topbar-right">
@@ -234,9 +370,15 @@ class StarQuestKid {
         </div>
         <div class="sqk-collected-stat">⭐ <span id="sqk-collected-count">${periodTotal}</span> in the jar</div>
 
-        <div class="sqk-jar-wrap" id="sqk-jar-tap">
-          <div class="sqk-jar-fill" style="height:${pct}%"></div>
-          <div class="sqk-jar-mascot">⭐</div>
+        <div class="sqk-jar-holder" id="sqk-jar-tap" role="button" aria-label="Star jar">
+          <div class="sqk-jar-glow"></div>
+          <div class="sqk-jar-lid"></div>
+          <div class="sqk-jar-wrap">
+            <div class="sqk-jar-fill" style="height:${pct}%">${bubbles}</div>
+            <div class="sqk-jar-shine"></div>
+            <div class="sqk-jar-mascot">⭐</div>
+          </div>
+          ${this.goal ? `<div class="sqk-jar-goal">🎯 ${progress} / ${target}</div>` : ''}
         </div>
 
         <div id="sqk-pending-section" class="sqk-pending-section">
@@ -275,6 +417,7 @@ class StarQuestKid {
     jarTap.addEventListener('click', () => {
       const current = document.getElementById('sqk-collected-count').textContent;
       window.SqSounds.speak(`${current} stars ${periodSpokenPhrase[period]}!`);
+      this.playJarTap(jarTap);
     });
 
     this.hydrateAvatarPhotos();
@@ -362,6 +505,8 @@ class StarQuestKid {
     this.spawnCelebration(targetX, targetY, theme.emojis);
     if (theme.mode === 'firework') this.spawnFireworks(theme.emojis);
     else this.spawnPageConfetti(theme.emojis);
+    this.showScene(theme.scene);
+    this.restartAnimation(jarEl, 'sqk-jar-gulp');
 
     setTimeout(() => {
       chip.remove();
@@ -396,6 +541,47 @@ class StarQuestKid {
     const el = document.getElementById('sqk-collected-count');
     if (!el) return;
     el.textContent = String((parseInt(el.textContent, 10) || 0) + delta);
+    this.restartAnimation(el.parentElement, 'sqk-stat-pop');
+  }
+
+  // Re-triggers a one-shot CSS animation class even if it's already on.
+  restartAnimation(el, cls) {
+    if (!el || window.SqSounds.reducedMotion) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+  // Tapping the jar: it wiggles and glows, a fountain of stars pops out of
+  // the lid, and the background turns into the next scene in
+  // SQK_SCENE_ORDER — a different little world on every tap.
+  playJarTap(jarEl) {
+    window.SqSounds.magic();
+    this.restartAnimation(jarEl, 'sqk-jar-tapped');
+    this.jarSceneIndex = ((this.jarSceneIndex ?? -1) + 1) % SQK_SCENE_ORDER.length;
+    this.showScene(SQK_SCENE_ORDER[this.jarSceneIndex]);
+    this.spawnJarFountain(jarEl);
+  }
+
+  spawnJarFountain(jarEl) {
+    if (window.SqSounds.reducedMotion) return;
+    const r = jarEl.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + 10;
+    const emojis = ['⭐', '🌟', '✨', '💫'];
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('div');
+      p.className = 'sqk-fountain-particle';
+      p.textContent = emojis[i % emojis.length];
+      p.style.left = `${x}px`;
+      p.style.top = `${y}px`;
+      p.style.setProperty('--dx', `${Math.round((Math.random() - 0.5) * 220)}px`);
+      p.style.setProperty('--dy', `${-Math.round(90 + Math.random() * 130)}px`);
+      p.style.setProperty('--delay', `${(i * 0.03).toFixed(2)}s`);
+      p.style.fontSize = `${18 + Math.random() * 16}px`;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1400);
+    }
   }
 
   // A small burst of emoji particles at (x, y), in the drop's theme —
@@ -462,29 +648,34 @@ class StarQuestKid {
     }
   }
 
-  // Every reward a kid has scratched open, grouped by Today/Week/Month/
-  // Year/All — based on when it was revealed (scratched), not when the
-  // goal itself was created or which goal period (week/month/year) it was
-  // for. That's shown per-card instead, since a Yearly goal revealed today
-  // still belongs in "Today".
+  // The Achievements tab: unlocked-but-unscratched rewards on top as big
+  // wobbling gift cards (any goal period — weekly, monthly, yearly — and
+  // always shown, whatever period filter is picked), then every reward
+  // already scratched open, filtered Today/Week/Month/Year/All by when it
+  // was revealed — not when the goal was created or which goal period it
+  // was for, since a Yearly goal revealed today still belongs in "Today".
   async renderAchievements() {
-    let goals = [];
     try {
       const res = await window.sqApi.goalHistory(this.kid.id);
-      goals = res.goals || [];
-    } catch (err) { /* leaves the empty state below */ }
-    this.achievementGoals = goals;
+      this.achievementGoals = res.goals || [];
+      this.pendingRewards = res.pending || [];
+    } catch (err) { /* keeps whatever was loaded last */ }
     if (!this.achievementPeriod) this.achievementPeriod = 'week';
     this.renderAchievementsList();
+    if (this.pendingRewards.length) {
+      window.SqSounds.speak(this.pendingRewards.length === 1
+        ? 'You have a surprise waiting! Tap the gift to scratch it!'
+        : `You have ${this.pendingRewards.length} surprises waiting! Tap a gift to scratch it!`);
+    }
   }
 
   filterGoalsByPeriod(goals, period) {
     if (period === 'all') return goals;
-    const dateOf = (g) => new Date(g.revealed_at || g.redeemed_at || g.created_at);
+    const dateOf = (g) => sqkDate(g.revealed_at || g.redeemed_at || g.created_at);
     const now = new Date();
     if (period === 'day') {
-      const today = now.toISOString().slice(0, 10);
-      return goals.filter((g) => dateOf(g).toISOString().slice(0, 10) === today);
+      const today = now.toDateString();
+      return goals.filter((g) => dateOf(g).toDateString() === today);
     }
     const cutoff = new Date(now);
     if (period === 'week') cutoff.setDate(now.getDate() - 7);
@@ -493,19 +684,24 @@ class StarQuestKid {
     return goals.filter((g) => dateOf(g).getTime() >= cutoff.getTime());
   }
 
-  formatAchievementDate(iso) {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  formatAchievementDate(s) {
+    const d = sqkDate(s);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   // Shared by renderJar() and renderAchievementsList() — a real tab bar,
   // not a separate screen reached via an icon button, so switching between
-  // the jar and past rewards feels like one place, not a detour.
+  // the jar and past rewards feels like one place, not a detour. A pulsing
+  // gift badge on Achievements says a scratch card is waiting there.
   viewTabsHtml(activeView) {
+    const waiting = this.pendingRewards.length;
     return `
       <div class="sqk-view-tabs">
         <button class="sqk-view-tab ${activeView === 'jar' ? 'active' : ''}" data-view="jar">🫙 Jar</button>
-        <button class="sqk-view-tab ${activeView === 'achievements' ? 'active' : ''}" data-view="achievements">🏆 Achievements</button>
+        <button class="sqk-view-tab ${activeView === 'achievements' ? 'active' : ''}" data-view="achievements">
+          🏆 Achievements${waiting ? ` <span class="sqk-tab-badge">🎁${waiting > 1 ? waiting : ''}</span>` : ''}
+        </button>
       </div>
     `;
   }
@@ -527,10 +723,12 @@ class StarQuestKid {
 
     const filtered = this.filterGoalsByPeriod(this.achievementGoals || [], period)
       .slice()
-      .sort((a, b) => new Date(b.revealed_at || b.redeemed_at) - new Date(a.revealed_at || a.redeemed_at));
+      .sort((a, b) => sqkDate(b.revealed_at || b.redeemed_at) - sqkDate(a.revealed_at || a.redeemed_at));
+    const pending = this.pendingRewards || [];
 
     this.mountEl.innerHTML = `
       <div class="sqk-screen sqk-jar-screen">
+        ${this.backdropHtml()}
         <div class="sqk-topbar">
           <button class="sqk-switch-kid-btn" id="sqk-switch-kid">🔄 ${this.esc(this.kid.name)}</button>
           <div class="sqk-topbar-right">
@@ -541,21 +739,37 @@ class StarQuestKid {
 
         ${this.viewTabsHtml('achievements')}
 
+        ${pending.length ? `
+          <div class="sqk-pending-rewards">
+            <p class="sqk-pending-rewards-title">🎉 Surprise waiting! Tap to scratch! 🎉</p>
+            ${pending.map((g, i) => `
+              <button class="sqk-gift-card sqk-bounce-in" data-pending-goal-id="${g.id}" style="--delay:${i * 0.1}s">
+                <span class="sqk-gift-emoji">🎁</span>
+                <span class="sqk-gift-info">
+                  <span class="sqk-gift-title">${goalPeriodLabel[g.period] || ''} goal done!</span>
+                  <span class="sqk-gift-meta">⭐ ${g.target_stars} stars · Scratch me! 👆</span>
+                </span>
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
+
         <div class="sqk-period-tabs">
           ${Object.keys(periodLabels).map((p) => `<button class="sqk-period-btn ${p === period ? 'active' : ''}" data-achievement-period="${p}">${periodLabels[p]}</button>`).join('')}
         </div>
 
         <div class="sqk-achievements-list">
           ${filtered.length === 0
-            ? `<p class="sqk-empty-hint">No rewards unlocked ${periodEmptyPhrase[period]}.</p>`
-            : filtered.map((g) => `
-              <div class="sqk-achievement-card">
+            ? `<p class="sqk-empty-hint">${pending.length ? 'Scratch your gift to add it here! 🏆' : `No rewards unlocked ${periodEmptyPhrase[period]}. Keep collecting stars! ⭐`}</p>`
+            : filtered.map((g, i) => `
+              <button class="sqk-achievement-card sqk-bounce-in" data-reward-text="${this.esc(g.reward_secret || '')}" style="--delay:${i * 0.07}s">
                 <span class="sqk-achievement-emoji">${g.reward_secret_emoji || '🎁'}</span>
-                <div class="sqk-achievement-info">
-                  <p class="sqk-achievement-text">${this.esc(g.reward_secret || '')}</p>
-                  <p class="sqk-achievement-meta">${goalPeriodLabel[g.period] || ''} goal · ${this.formatAchievementDate(g.revealed_at || g.redeemed_at)}</p>
-                </div>
-              </div>
+                <span class="sqk-achievement-info">
+                  <span class="sqk-achievement-text">${this.esc(g.reward_secret || '')}</span>
+                  <span class="sqk-achievement-meta">${goalPeriodLabel[g.period] || ''} goal · ${this.formatAchievementDate(g.revealed_at || g.redeemed_at)}</span>
+                </span>
+                <span class="sqk-achievement-trophy">🏆</span>
+              </button>
             `).join('')}
         </div>
       </div>
@@ -568,22 +782,52 @@ class StarQuestKid {
     this.mountEl.querySelectorAll('[data-achievement-period]').forEach((btn) => {
       btn.addEventListener('click', () => { this.achievementPeriod = btn.dataset.achievementPeriod; this.renderAchievementsList(); });
     });
+    this.mountEl.querySelectorAll('[data-pending-goal-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const goal = pending.find((g) => g.id === btn.dataset.pendingGoalId);
+        if (goal) { window.SqSounds.chime(); this.openScratch(goal); }
+      });
+    });
+    this.mountEl.querySelectorAll('[data-reward-text]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.SqSounds.speak(btn.dataset.rewardText || 'You did it!');
+        this.restartAnimation(btn, 'sqk-card-wiggle');
+      });
+    });
+  }
+
+  openScratch(goal) {
+    this.scratchGoal = goal;
+    this.renderScratch();
   }
 
   renderScratch() {
+    const goal = this.scratchGoal;
     this.mountEl.innerHTML = `
       <div class="sqk-screen sqk-scratch-screen">
-        <h1 class="sqk-who-title">🎉 You did it! 🎉</h1>
-        <div class="sqk-scratch-wrap">
-          <div class="sqk-scratch-reveal" id="sqk-reveal-content">
-            <span class="sqk-reveal-emoji">${this.goal.reward_secret_emoji || '🎁'}</span>
-          </div>
-          <canvas id="sqk-scratch-canvas" class="sqk-scratch-canvas"></canvas>
+        ${this.backdropHtml()}
+        <div class="sqk-topbar">
+          <button class="sqk-back-btn" id="sqk-scratch-later">← Later</button>
+          ${this.soundToggleHtml()}
         </div>
-        <p class="sqk-scratch-hint">Scratch with your finger!</p>
+        <div class="sqk-scratch-stage">
+          <div class="sqk-sunburst" aria-hidden="true"></div>
+          <h1 class="sqk-who-title">🎉 You did it! 🎉</h1>
+          <div class="sqk-scratch-wrap">
+            <div class="sqk-scratch-reveal" id="sqk-reveal-content">
+              <span class="sqk-reveal-emoji">${goal.reward_secret_emoji || '🎁'}</span>
+            </div>
+            <canvas id="sqk-scratch-canvas" class="sqk-scratch-canvas"></canvas>
+          </div>
+          <p class="sqk-scratch-hint">👆 Scratch with your finger!</p>
+        </div>
       </div>
     `;
+    document.getElementById('sqk-scratch-later').addEventListener('click', () => this.renderAchievements());
+    this.bindSoundToggle();
     window.SqSounds.celebrate();
+    window.SqSounds.speak('You did it! Scratch the card to see your surprise!');
+    this.showScene('party');
     this.initScratchCanvas();
   }
 
@@ -597,12 +841,18 @@ class StarQuestKid {
     const ctx = canvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     grad.addColorStop(0, '#fbbf24');
-    grad.addColorStop(1, '#f59e0b');
+    grad.addColorStop(0.5, '#f472b6');
+    grad.addColorStop(1, '#a78bfa');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = 'bold 28px sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    // Sprinkle of stars on the foil so it looks like a real scratch card.
+    ctx.font = '18px sans-serif';
     ctx.textAlign = 'center';
+    for (let i = 0; i < 18; i++) {
+      ctx.fillText(i % 2 ? '⭐' : '✨', Math.random() * canvas.width, 16 + Math.random() * (canvas.height - 16));
+    }
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.fillText('✨ Scratch here! ✨', canvas.width / 2, canvas.height / 2);
 
     ctx.globalCompositeOperation = 'destination-out';
@@ -662,25 +912,44 @@ class StarQuestKid {
   async completeScratch(canvas) {
     if (!window.SqSounds.reducedMotion) canvas.style.transition = 'opacity 0.4s ease';
     canvas.style.opacity = '0';
+    // The faded canvas still sits on top of the card — let taps through
+    // to the "Yay!" button underneath.
+    canvas.style.pointerEvents = 'none';
     window.SqSounds.celebrate();
     const theme = SQK_CELEBRATION_THEMES[Math.floor(Math.random() * SQK_CELEBRATION_THEMES.length)];
     if (theme.mode === 'firework') this.spawnFireworks(theme.emojis);
     else this.spawnPageConfetti(theme.emojis);
+    this.showScene(theme.scene);
+
+    let goal = this.scratchGoal;
     try {
-      const { goal } = await window.sqApi.revealGoal(this.goal.id);
-      this.goal = goal;
-      this.goals[this.goalPeriod] = goal;
+      ({ goal } = await window.sqApi.revealGoal(goal.id));
     } catch (err) { /* non-fatal for the kid-facing view */ }
+    // Move it from "waiting" to "opened" locally so the Achievements tab
+    // and the jar's tab badge update even before the next refetch.
+    this.pendingRewards = this.pendingRewards.filter((g) => g.id !== goal.id);
+    if (!this.achievementGoals.some((g) => g.id === goal.id)) this.achievementGoals.unshift(goal);
+    if (this.goals[goal.period] && this.goals[goal.period].id === goal.id) {
+      this.goals[goal.period] = { ...this.goals[goal.period], ...goal };
+      if (this.goalPeriod === goal.period) this.goal = this.goals[goal.period];
+    }
+    this.scratchGoal = goal;
 
     setTimeout(() => {
       const revealEl = document.getElementById('sqk-reveal-content');
+      if (!revealEl) return;
+      const hint = this.mountEl.querySelector('.sqk-scratch-hint');
+      if (hint) hint.style.visibility = 'hidden';
       revealEl.innerHTML = `
-        <span class="sqk-reveal-emoji">${this.goal.reward_secret_emoji || '🎁'}</span>
-        <p class="sqk-reveal-text">${this.esc(this.goal.reward_secret || '')}</p>
-        <button class="btn btn-primary" id="sqk-scratch-done">Yay!</button>
+        <span class="sqk-reveal-emoji sqk-reveal-pop">${goal.reward_secret_emoji || '🎁'}</span>
+        <p class="sqk-reveal-text">${this.esc(goal.reward_secret || '')}</p>
+        <button class="btn btn-primary" id="sqk-scratch-done">Yay! 🎉</button>
       `;
-      window.SqSounds.speak(this.goal.reward_secret || 'You unlocked your reward!');
-      document.getElementById('sqk-scratch-done').addEventListener('click', () => this.renderJar());
+      window.SqSounds.speak(goal.reward_secret ? `You won: ${goal.reward_secret}!` : 'You unlocked your reward!');
+      document.getElementById('sqk-scratch-done').addEventListener('click', () => {
+        if (this.pendingRewards.length) this.openScratch(this.pendingRewards[0]);
+        else this.renderAchievements();
+      });
     }, 500);
   }
 
