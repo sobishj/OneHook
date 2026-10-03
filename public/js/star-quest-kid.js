@@ -1,5 +1,5 @@
 // Star Quest — Kid Mode. Ages 3-8, no reading required: big tap targets,
-// TTS on every label, positive-only feedback. Fully isolated from
+// music-box tunes instead of voice, positive-only feedback. Fully isolated from
 // parent-view code and from One Hook/ui.js.
 
 const SQ_AVATAR_EMOJI_K = {
@@ -159,7 +159,7 @@ class StarQuestKid {
   }
 
   // Small circular button, top-right, that mutes/unmutes all Star Quest
-  // audio (chimes + TTS) — preference persists via SqSounds.setEnabled.
+  // audio (chimes + music) — preference persists via SqSounds.setEnabled.
   soundToggleHtml() {
     const on = window.SqSounds.enabled;
     return `<button class="sqk-sound-btn" id="sqk-sound-toggle" type="button" title="${on ? 'Sound on' : 'Sound off'}" aria-label="Toggle sound">${on ? '🔊' : '🔇'}</button>`;
@@ -204,8 +204,7 @@ class StarQuestKid {
     this.hydrateAvatarPhotos();
     this.mountEl.querySelectorAll('.sqk-avatar-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        // A cheerful chime, not spoken TTS, on entering a kid's jar — the
-        // name doesn't need to be read aloud for this transition.
+        // A cheerful chime on entering a kid's jar.
         window.SqSounds.chime();
         const kid = this.kids.find((k) => k.id === btn.dataset.kidId);
         this.selectKid(kid);
@@ -325,11 +324,6 @@ class StarQuestKid {
     const collectedEntries = this.history.filter((h) => h.collected_at);
     const period = this.jarPeriod || 'week';
     const periodLabels = { day: 'Today', week: 'Week', month: 'Month', year: 'Year', all: 'All' };
-    // Phrasing for the jar-tap voice line — always "in the jar", matching
-    // the visible "⭐ N in the jar" stat above, plus whichever period is
-    // selected (kept separate from periodLabels/tab text since "in the
-    // jar this Year" reads naturally as speech but "Year" alone doesn't).
-    const periodSpokenPhrase = { day: 'in the jar today', week: 'in the jar this week', month: 'in the jar this month', year: 'in the jar this year', all: 'in the jar' };
     const periodTotal = this.filterByPeriod(collectedEntries, period).reduce((s, h) => s + h.stars, 0);
 
     // Flatten each entry into one draggable unit per star — a kid drags
@@ -386,7 +380,7 @@ class StarQuestKid {
             <p class="sqk-pending-label">✨ Drag your stars into the jar!</p>
             <div class="sqk-pending-stars" id="sqk-pending-stars">
               ${pendingUnits.map((u) => `
-                <div class="sqk-pending-star" data-entry-id="${u.entryId}" data-reason="${this.esc(u.reason)}">
+                <div class="sqk-pending-star" data-entry-id="${u.entryId}">
                   ${u.reasonIconPhotoKey
                     ? `<img class="sqk-pending-star-badge-photo" data-avatar-key="${this.esc(u.reasonIconPhotoKey)}" alt="">`
                     : `<span class="sqk-pending-star-badge">${u.reasonIcon || '⭐'}</span>`}
@@ -409,16 +403,7 @@ class StarQuestKid {
     });
 
     const jarTap = document.getElementById('sqk-jar-tap');
-    // Speaks the same number the "in the jar" stat above is showing. Reads
-    // it live from the DOM rather than the `periodTotal` this render was
-    // built with — dragging a star into the jar bumps #sqk-collected-count
-    // in place (bumpCollectedStat) without a full re-render, so the
-    // closure's periodTotal would otherwise go stale by one star.
-    jarTap.addEventListener('click', () => {
-      const current = document.getElementById('sqk-collected-count').textContent;
-      window.SqSounds.speak(`${current} stars ${periodSpokenPhrase[period]}!`);
-      this.playJarTap(jarTap);
-    });
+    jarTap.addEventListener('click', () => this.playJarTap(jarTap));
 
     this.hydrateAvatarPhotos();
     this.bindPendingDrag();
@@ -426,8 +411,8 @@ class StarQuestKid {
 
   // Custom pointer-based drag (not native HTML5 drag-and-drop, which touch
   // browsers support poorly/inconsistently) for dragging a pending star
-  // chip into the jar. A short tap (little/no movement) speaks the reason
-  // instead of collecting, matching the old tap-to-hear behavior.
+  // chip into the jar. A short tap (little/no movement) just jingles and wiggles
+  // instead of collecting.
   bindPendingDrag() {
     const jarEl = document.getElementById('sqk-jar-tap');
     if (!jarEl) return;
@@ -466,7 +451,8 @@ class StarQuestKid {
         jarEl.classList.remove('sqk-jar-target');
 
         if (!moved) {
-          window.SqSounds.speak(chip.dataset.reason || 'Great job!');
+          window.SqSounds.dropChime();
+          this.restartAnimation(chip, 'sqk-card-wiggle');
           return;
         }
         if (isOverJar(e.clientX, e.clientY)) {
@@ -662,11 +648,7 @@ class StarQuestKid {
     } catch (err) { /* keeps whatever was loaded last */ }
     if (!this.achievementPeriod) this.achievementPeriod = 'week';
     this.renderAchievementsList();
-    if (this.pendingRewards.length) {
-      window.SqSounds.speak(this.pendingRewards.length === 1
-        ? 'You have a surprise waiting! Tap the gift to scratch it!'
-        : `You have ${this.pendingRewards.length} surprises waiting! Tap a gift to scratch it!`);
-    }
+    if (this.pendingRewards.length) window.SqSounds.music('surprise');
   }
 
   filterGoalsByPeriod(goals, period) {
@@ -762,7 +744,7 @@ class StarQuestKid {
           ${filtered.length === 0
             ? `<p class="sqk-empty-hint">${pending.length ? 'Scratch your gift to add it here! 🏆' : `No rewards unlocked ${periodEmptyPhrase[period]}. Keep collecting stars! ⭐`}</p>`
             : filtered.map((g, i) => `
-              <button class="sqk-achievement-card sqk-bounce-in" data-reward-text="${this.esc(g.reward_secret || '')}" style="--delay:${i * 0.07}s">
+              <button class="sqk-achievement-card sqk-bounce-in" data-reward-card style="--delay:${i * 0.07}s">
                 <span class="sqk-achievement-emoji">${g.reward_secret_emoji || '🎁'}</span>
                 <span class="sqk-achievement-info">
                   <span class="sqk-achievement-text">${this.esc(g.reward_secret || '')}</span>
@@ -788,9 +770,9 @@ class StarQuestKid {
         if (goal) { window.SqSounds.chime(); this.openScratch(goal); }
       });
     });
-    this.mountEl.querySelectorAll('[data-reward-text]').forEach((btn) => {
+    this.mountEl.querySelectorAll('[data-reward-card]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        window.SqSounds.speak(btn.dataset.rewardText || 'You did it!');
+        window.SqSounds.music('twinkle');
         this.restartAnimation(btn, 'sqk-card-wiggle');
       });
     });
@@ -825,8 +807,7 @@ class StarQuestKid {
     `;
     document.getElementById('sqk-scratch-later').addEventListener('click', () => this.renderAchievements());
     this.bindSoundToggle();
-    window.SqSounds.celebrate();
-    window.SqSounds.speak('You did it! Scratch the card to see your surprise!');
+    window.SqSounds.music('surprise');
     this.showScene('party');
     this.initScratchCanvas();
   }
@@ -915,7 +896,7 @@ class StarQuestKid {
     // The faded canvas still sits on top of the card — let taps through
     // to the "Yay!" button underneath.
     canvas.style.pointerEvents = 'none';
-    window.SqSounds.celebrate();
+    window.SqSounds.music('reward');
     const theme = SQK_CELEBRATION_THEMES[Math.floor(Math.random() * SQK_CELEBRATION_THEMES.length)];
     if (theme.mode === 'firework') this.spawnFireworks(theme.emojis);
     else this.spawnPageConfetti(theme.emojis);
@@ -945,7 +926,6 @@ class StarQuestKid {
         <p class="sqk-reveal-text">${this.esc(goal.reward_secret || '')}</p>
         <button class="btn btn-primary" id="sqk-scratch-done">Yay! 🎉</button>
       `;
-      window.SqSounds.speak(goal.reward_secret ? `You won: ${goal.reward_secret}!` : 'You unlocked your reward!');
       document.getElementById('sqk-scratch-done').addEventListener('click', () => {
         if (this.pendingRewards.length) this.openScratch(this.pendingRewards[0]);
         else this.renderAchievements();

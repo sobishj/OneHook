@@ -1,7 +1,7 @@
-// Star Quest — sound + speech helpers for Kid Mode. Web Audio API for
-// simple chimes (no audio files needed), Web Speech API for TTS. Respects
+// Star Quest — sound helpers for Kid Mode. Web Audio API for chimes and
+// little music-box tunes (no audio files, no voice). Respects
 // prefers-reduced-motion by exposing a flag other modules can check.
-// All audio (chimes and speech) can be muted by the kid/parent; the
+// All audio can be muted by the kid/parent; the
 // preference persists across visits via localStorage.
 
 const SQ_REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -47,42 +47,89 @@ function sqPlayTone(freq, duration, delay = 0, gainPeak = 0.15) {
   osc.stop(startAt + duration + 0.05);
 }
 
-// ---- Voice selection: speak() picks a random installed voice each time,
-// biased towards alternating between "male" and "female" sounding ones (the
-// Web Speech API has no gender field, so this is a name-based heuristic —
-// most engines label their voices "X Male"/"X Female" or use a recognizable
-// human name). Voices load asynchronously in some browsers, so this caches
-// getVoices() and refreshes on the voiceschanged event rather than reading
-// it once at script-load time, when it's often still empty.
-let sqVoiceCache = [];
-function sqRefreshVoices() {
-  if ('speechSynthesis' in window) sqVoiceCache = window.speechSynthesis.getVoices() || [];
-}
-if ('speechSynthesis' in window) {
-  sqRefreshVoices();
-  window.speechSynthesis.addEventListener('voiceschanged', sqRefreshVoices);
+// ---- Music: little music-box tunes (no voice, no audio files). A tune is
+// a melody plus an optional bass line, each a list of [note, beats] with
+// 'R' for a rest. Only one tune plays at a time — starting a new one
+// fades out the last so they never pile up on top of each other. ----
+const SQ_NOTE_SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function sqNoteFreq(note) {
+  const m = /^([A-G])(#|b)?(\d)$/.exec(note);
+  if (!m) return 0;
+  const midi = (Number(m[3]) + 1) * 12 + SQ_NOTE_SEMITONES[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-const SQ_FEMALE_VOICE_HINTS = ['female', 'zira', 'samantha', 'victoria', 'karen', 'moira', 'tessa', 'susan', 'fiona', 'allison', 'ava', 'serena', 'kate', 'hazel', 'catherine', 'linda', 'heera', 'salli', 'joanna'];
-const SQ_MALE_VOICE_HINTS = ['male', 'david', 'mark', 'daniel', 'alex', 'fred', 'oliver', 'george', 'james', 'arthur', 'ryan', 'guy', 'tom', 'rishi', 'justin', 'eric'];
-
-function sqPickRandomVoice() {
-  const voices = sqVoiceCache.length ? sqVoiceCache : (('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : []);
-  if (!voices.length) return null;
-
-  const englishVoices = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
-  const pool = englishVoices.length ? englishVoices : voices;
-  const matches = (v, hints) => hints.some((h) => v.name.toLowerCase().includes(h));
-  const femaleVoices = pool.filter((v) => matches(v, SQ_FEMALE_VOICE_HINTS));
-  const maleVoices = pool.filter((v) => matches(v, SQ_MALE_VOICE_HINTS) && !matches(v, SQ_FEMALE_VOICE_HINTS));
-
-  let group = pool;
-  if (femaleVoices.length && maleVoices.length) group = Math.random() < 0.5 ? femaleVoices : maleVoices;
-  else if (femaleVoices.length) group = femaleVoices;
-  else if (maleVoices.length) group = maleVoices;
-
-  return group[Math.floor(Math.random() * group.length)];
+// One plucked music-box note: a triangle wave with a soft sine an octave
+// up for sparkle, quick attack and a gentle ring-out.
+function sqMusicBoxNote(ctx, out, freq, startAt, duration, volume) {
+  [[freq, 'triangle', volume], [freq * 2, 'sine', volume * 0.25]].forEach(([f, type, vol]) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = f;
+    osc.connect(gain);
+    gain.connect(out);
+    gain.gain.setValueAtTime(0, startAt);
+    gain.gain.linearRampToValueAtTime(vol, startAt + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, startAt + Math.max(0.25, duration * 1.6));
+    osc.start(startAt);
+    osc.stop(startAt + Math.max(0.25, duration * 1.6) + 0.05);
+  });
 }
+
+let sqCurrentTuneOut = null;
+function sqPlayTune(tune) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  if (sqCurrentTuneOut) {
+    const old = sqCurrentTuneOut;
+    old.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    setTimeout(() => old.disconnect(), 400);
+  }
+  const out = ctx.createGain();
+  out.gain.value = 1;
+  out.connect(ctx.destination);
+  sqCurrentTuneOut = out;
+
+  const beat = 60 / tune.bpm;
+  const t0 = ctx.currentTime + 0.05;
+  [[tune.melody, 0.13], [tune.bass || [], 0.09]].forEach(([line, volume]) => {
+    let t = t0;
+    line.forEach(([note, beats]) => {
+      if (note !== 'R') sqMusicBoxNote(ctx, out, sqNoteFreq(note), t, beats * beat, volume);
+      t += beats * beat;
+    });
+  });
+}
+
+const SQ_TUNES = {
+  // The prize is revealed — a bouncy four-bar song in C major (~6s).
+  reward: {
+    bpm: 150,
+    melody: [
+      ['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['C6', 0.5], ['B5', 0.5], ['C6', 0.5], ['G5', 1],
+      ['A5', 0.5], ['G5', 0.5], ['F5', 0.5], ['E5', 0.5], ['D5', 0.5], ['E5', 0.5], ['F5', 1],
+      ['E5', 0.5], ['G5', 0.5], ['C6', 0.5], ['E6', 0.5], ['D6', 0.5], ['C6', 0.5], ['A5', 1],
+      ['G5', 0.5], ['F5', 0.5], ['D5', 0.5], ['B4', 0.5], ['C5', 0.5], ['G5', 0.5], ['C6', 1]
+    ],
+    bass: [
+      ['C3', 2], ['G2', 2], ['F2', 2], ['C3', 2],
+      ['A2', 2], ['F2', 2], ['G2', 2], ['C3', 2]
+    ]
+  },
+  // A gift is waiting / the scratch card opens — playful "ta-da!" (~2.5s).
+  surprise: {
+    bpm: 170,
+    melody: [['G5', 0.5], ['C6', 0.5], ['E6', 0.5], ['G6', 1.5], ['R', 0.5], ['E6', 0.5], ['F6', 0.5], ['G6', 2]],
+    bass: [['C3', 2], ['G2', 2], ['C3', 2]]
+  },
+  // Tapping an opened reward — tiny sparkle.
+  twinkle: {
+    bpm: 220,
+    melody: [['E6', 0.5], ['G6', 0.5], ['C7', 1.5]]
+  }
+};
 
 // A pool of distinct little jingles for "a star landed in the jar" — picked
 // at random each drop so repeated drops don't all sound identical.
@@ -104,7 +151,7 @@ const SqSounds = {
 
   setEnabled(enabled) {
     sqSetSoundEnabled(enabled);
-    if (!enabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (!enabled && sqCurrentTuneOut && sqAudioCtx) sqCurrentTuneOut.gain.setTargetAtTime(0, sqAudioCtx.currentTime, 0.05);
   },
 
   chime() {
@@ -136,15 +183,10 @@ const SqSounds = {
     sqPlayTone(200 + Math.random() * 100, 0.04, 0, 0.05);
   },
 
-  speak(text) {
-    if (!sqSoundEnabled() || !text || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.95;
-    utter.pitch = 1.1;
-    const voice = sqPickRandomVoice();
-    if (voice) utter.voice = voice;
-    window.speechSynthesis.speak(utter);
+  // One of SQ_TUNES by name: 'reward', 'surprise' or 'twinkle'.
+  music(name) {
+    if (!sqSoundEnabled() || !SQ_TUNES[name]) return;
+    sqPlayTune(SQ_TUNES[name]);
   }
 };
 
